@@ -15,8 +15,8 @@ from lib.data import (
     load_master_data, render_sidebar_filters,
 )
 
-st.set_page_config(page_title="Phân tích thời gian", page_icon="📅", layout="wide")
-st.title("📅 Phân tích theo thời gian")
+st.set_page_config(page_title="Phân tích thời gian", page_icon=None, layout="wide")
+st.title("Phân tích theo thời gian")
 st.caption("Xu hướng, mùa vụ, so sánh cùng kỳ, dự báo tái tục.")
 
 df_raw = load_master_data()
@@ -41,7 +41,7 @@ if df.empty:
 # ============================================================================
 # 4.1 YoY comparison — 12 tháng x 3 năm
 # ============================================================================
-st.markdown("### 📊 So sánh cùng kỳ (Year-over-Year)")
+st.markdown("### So sánh cùng kỳ (Year-over-Year)")
 
 df_yoy = df.copy()
 df_yoy["Year"] = df_yoy[DATE_COL].dt.year
@@ -88,7 +88,7 @@ st.divider()
 # ============================================================================
 # 4.2 MoM combo — bar + line
 # ============================================================================
-st.markdown("### 📈 MoM Trend: Doanh thu tháng + % tăng trưởng")
+st.markdown("### MoM Trend: Doanh thu tháng + % tăng trưởng")
 
 df_mom = df.copy()
 df_mom["Month_str"] = df_mom[DATE_COL].dt.to_period("M").astype(str)
@@ -122,7 +122,7 @@ st.divider()
 # ============================================================================
 # 4.3 Heatmap: Ngày trong tuần × Tuần trong năm
 # ============================================================================
-st.markdown("### 🔥 Heatmap: Ngày trong tuần × Tuần trong năm")
+st.markdown("### Heatmap: Ngày trong tuần × Tuần trong năm")
 
 metric_choice = st.radio(
     "Chỉ số",
@@ -170,7 +170,7 @@ st.divider()
 # ============================================================================
 # 4.4 Cumulative revenue by Source
 # ============================================================================
-st.markdown("### 📈 Doanh thu cộng dồn theo thời gian")
+st.markdown("### Doanh thu cộng dồn theo thời gian")
 
 df_cum = df.copy().sort_values(DATE_COL)
 df_cum["date_only"] = df_cum[DATE_COL].dt.date
@@ -194,7 +194,7 @@ st.divider()
 # ============================================================================
 # 4.5 Contract expiry — HĐ sắp hết hạn
 # ============================================================================
-st.markdown("### ⏰ HĐ sắp hết hạn (dùng cho tái tục)")
+st.markdown("### HĐ sắp hết hạn (dùng cho tái tục)")
 
 if "Ngày kết thúc" in df.columns:
     today = pd.Timestamp.now().normalize()
@@ -250,7 +250,7 @@ if "Ngày kết thúc" in df.columns:
                                   "Sản phẩm", "Nhà BH", "Họ tên sale",
                                   "Ngày kết thúc", "days_to_expiry",
                                   "Phí BH (VNĐ)"]].sort_values("days_to_expiry")
-            st.markdown(f"**🚨 {len(urgent_view)} HĐ hết hạn trong 15 ngày tới:**")
+            st.markdown(f"**Có {len(urgent_view)} HĐ hết hạn trong 15 ngày tới:**")
             st.dataframe(
                 urgent_view.rename(columns={"days_to_expiry": "Số ngày còn"}),
                 column_config={

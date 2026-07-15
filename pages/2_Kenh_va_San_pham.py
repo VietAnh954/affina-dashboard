@@ -14,8 +14,8 @@ from lib.data import (
     load_master_data, render_sidebar_filters,
 )
 
-st.set_page_config(page_title="Kênh & Sản phẩm", page_icon="📊", layout="wide")
-st.title("📊 Kênh & Sản phẩm")
+st.set_page_config(page_title="Kênh & Sản phẩm", page_icon=None, layout="wide")
+st.title("Kênh & Sản phẩm")
 st.caption("Phân tích mix sản phẩm, kênh nào bán tốt, nhà bảo hiểm nào là chủ lực.")
 
 df_raw = load_master_data()
@@ -32,7 +32,7 @@ if df.empty:
 # ============================================================================
 # 2.1 Sunburst: Source → Channel → Loại BH → (top 5) Sản phẩm
 # ============================================================================
-st.markdown("### 🌞 Phân cấp doanh thu: Source → Channel → Loại BH → Sản phẩm")
+st.markdown("### Phân cấp doanh thu: Source → Channel → Loại BH → Sản phẩm")
 st.caption("Click vào 1 phần để zoom vào. Click vào giữa để back.")
 
 sb = df.copy()
@@ -72,7 +72,7 @@ st.divider()
 left, right = st.columns([2, 1])
 
 with left:
-    st.markdown("#### 📊 Doanh thu theo Channel")
+    st.markdown("#### Doanh thu theo Channel")
     by_channel = (df.groupby(["Channel", "Source"], as_index=False)["Doanh thu trước thuế"]
                     .sum().sort_values("Doanh thu trước thuế", ascending=True))
     if not by_channel.empty:
@@ -89,7 +89,7 @@ with left:
         empty_state()
 
 with right:
-    st.markdown("#### 🛡️ Cơ cấu Loại bảo hiểm")
+    st.markdown("#### Cơ cấu Loại bảo hiểm")
     by_loai = df.groupby("Loại bảo hiểm", as_index=False)["Doanh thu trước thuế"].sum() \
                 .sort_values("Doanh thu trước thuế", ascending=False)
     if not by_loai.empty:
@@ -107,7 +107,7 @@ st.divider()
 # ============================================================================
 # 2.4 Treemap: Nhà BH × Loại BH
 # ============================================================================
-st.markdown("### 🌳 Treemap: Nhà bảo hiểm × Loại BH")
+st.markdown("### Treemap: Nhà bảo hiểm × Loại BH")
 st.caption("Kích thước ô ∝ doanh thu. Màu ∝ Affina Revenue.")
 
 tm = df.groupby(["Nhà BH", "Loại bảo hiểm"], as_index=False).agg(
@@ -131,7 +131,7 @@ st.divider()
 # ============================================================================
 # 2.5 Grouped Bar: Top 15 sản phẩm × Source
 # ============================================================================
-st.markdown("### 🏆 Top 15 sản phẩm — chia theo Source")
+st.markdown("### Top 15 sản phẩm — chia theo Source")
 top15 = (df.groupby("Sản phẩm", as_index=False)["Doanh thu trước thuế"]
            .sum().nlargest(15, "Doanh thu trước thuế")["Sản phẩm"].tolist())
 gb = df[df["Sản phẩm"].isin(top15)].groupby(["Sản phẩm", "Source"], as_index=False)["Doanh thu trước thuế"].sum()
@@ -155,7 +155,7 @@ st.divider()
 # ============================================================================
 # 2.6 BHSK Add-ons: Ngoại trú / Nha khoa / Thai sản / Topup
 # ============================================================================
-st.markdown("### 💊 BHSK Add-ons")
+st.markdown("### BHSK Add-ons")
 st.caption("Chỉ áp dụng cho HĐ Loại BH = BHSK. Có / Không có từng gói bổ trợ.")
 
 df_bhsk = df[df["Loại bảo hiểm"] == "BHSK"].copy()

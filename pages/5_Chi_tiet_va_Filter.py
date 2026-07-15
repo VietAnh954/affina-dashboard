@@ -16,8 +16,8 @@ from lib.data import (
     load_master_data, render_sidebar_filters,
 )
 
-st.set_page_config(page_title="Chi tiết & Filter", page_icon="🔍", layout="wide")
-st.title("🔍 Chi tiết & Filter")
+st.set_page_config(page_title="Chi tiết & Filter", page_icon=None, layout="wide")
+st.title("Chi tiết & Filter")
 st.caption("Tra cứu, filter theo nhiều điều kiện, xuất CSV/Excel cho phân tích riêng.")
 
 df_raw = load_master_data()
@@ -34,24 +34,24 @@ if df.empty:
 # ============================================================================
 # Advanced filter panel (bổ sung filter chi tiết)
 # ============================================================================
-st.markdown("### 🎯 Filter chi tiết")
+st.markdown("### Filter chi tiết")
 
 col_a, col_b, col_c = st.columns(3)
 
 with col_a:
-    q_contract = st.text_input("🔍 Số hợp đồng (chứa)")
-    q_ndbh = st.text_input("🧍 Tên NĐBH (chứa)")
+    q_contract = st.text_input("Số hợp đồng (chứa)")
+    q_ndbh = st.text_input("Tên NĐBH (chứa)")
 
 with col_b:
-    q_nmbh = st.text_input("💼 Tên NMBH (chứa)")
-    q_sale = st.text_input("👤 Tên sale (chứa)")
+    q_nmbh = st.text_input("Tên NMBH (chứa)")
+    q_sale = st.text_input("Tên sale (chứa)")
 
 with col_c:
     if "Số tiền thanh toán" in df.columns:
         min_amount = int(df["Số tiền thanh toán"].dropna().min() or 0)
         max_amount = int(df["Số tiền thanh toán"].dropna().max() or 100_000_000)
         amount_range = st.slider(
-            "💰 Số tiền thanh toán (VNĐ)",
+            "Số tiền thanh toán (VNĐ)",
             min_value=min_amount, max_value=max_amount,
             value=(min_amount, max_amount),
             step=100_000,
@@ -98,7 +98,7 @@ st.divider()
 # ============================================================================
 # Statistical summary
 # ============================================================================
-st.markdown("### 📊 Tóm tắt kết quả filter")
+st.markdown("### Tóm tắt kết quả filter")
 
 if df_view.empty:
     empty_state("Không có bản ghi nào khớp với filter đang chọn.")
@@ -117,14 +117,14 @@ if DATE_COL in df_view.columns:
     d_min = df_view[DATE_COL].min()
     d_max = df_view[DATE_COL].max()
     if pd.notna(d_min) and pd.notna(d_max):
-        st.caption(f"📅 Khoảng thời gian dữ liệu: **{d_min.strftime('%d/%m/%Y')}** → **{d_max.strftime('%d/%m/%Y')}**")
+        st.caption(f"Khoảng thời gian dữ liệu: **{d_min.strftime('%d/%m/%Y')}** → **{d_max.strftime('%d/%m/%Y')}**")
 
 st.divider()
 
 # ============================================================================
 # Interactive DataTable
 # ============================================================================
-st.markdown("### 📋 Dữ liệu chi tiết")
+st.markdown("### Dữ liệu chi tiết")
 
 # Chọn cột hiển thị
 default_cols = [
@@ -172,14 +172,14 @@ st.divider()
 # ============================================================================
 # Download
 # ============================================================================
-st.markdown("### 📥 Tải xuống")
+st.markdown("### Tải xuống")
 
 d_left, d_right = st.columns(2)
 
 with d_left:
     csv_data = df_view.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
-        "📥 Tải CSV",
+        "Tải CSV",
         data=csv_data,
         file_name=f"affina_dashboard_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.csv",
         mime="text/csv",
@@ -195,7 +195,7 @@ with d_right:
         df_view[cols_out].to_excel(writer, sheet_name="Data", index=False)
     buf.seek(0)
     st.download_button(
-        "📥 Tải Excel",
+        "Tải Excel",
         data=buf.getvalue(),
         file_name=f"affina_dashboard_{pd.Timestamp.now().strftime('%Y%m%d_%H%M')}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

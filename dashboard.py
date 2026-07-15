@@ -28,7 +28,7 @@ from lib.data import (
 # ============================================================================
 st.set_page_config(
     page_title="Affina Sales Dashboard",
-    page_icon="📊",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
@@ -39,7 +39,7 @@ st.set_page_config(
 # ============================================================================
 # Header
 # ============================================================================
-st.title("📊 Affina Sales Dashboard — Tổng quan")
+st.title("Affina Sales Dashboard — Tổng quan")
 st.caption(
     "Bức tranh tổng thể doanh thu, sản phẩm, kênh, đội ngũ sale. "
     "Data tự động cập nhật hàng ngày lúc 10h sáng."
@@ -50,13 +50,13 @@ st.caption(
 # ============================================================================
 df_raw = load_master_data()
 if df_raw.empty:
-    st.warning("⚠️ Chưa có dữ liệu trong bảng `dashboard_master_data`.")
+    st.warning("Chưa có dữ liệu trong bảng `dashboard_master_data`.")
     st.info(
-        "💡 **Cách khắc phục:**\n\n"
+        "**Cách khắc phục:**\n\n"
         "1. Vào GitHub repo → Actions tab\n"
         "2. Chọn workflow **Build Dashboard Data**\n"
         "3. Click **Run workflow** → Run workflow\n"
-        "4. Chờ ~3-5 phút, sau đó reload trang này"
+        "4. Chờ từ 3-5 phút, sau đó reload trang này"
     )
     st.stop()
 
@@ -70,7 +70,7 @@ if df.empty:
 # ============================================================================
 # SECTION 1 — KPI Cards
 # ============================================================================
-st.markdown("### 📈 Chỉ số kinh doanh chính")
+st.markdown("### Chỉ số kinh doanh chính")
 
 def _sum(col: str) -> float:
     return float(df[col].sum()) if col in df.columns else 0.0
@@ -110,24 +110,24 @@ if DATE_COL in df.columns and df[DATE_COL].notna().any():
 
 # Hàng 1: 4 KPI chính
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("💰 Doanh thu trước thuế", fmt_vnd(total_rev, short=True), delta=delta_rev)
-c2.metric("💵 Tổng thanh toán",       fmt_vnd(total_pay, short=True))
-c3.metric("📋 Số hợp đồng",           fmt_num(total_hd), delta=delta_hd)
-c4.metric("🏢 Affina Revenue",        fmt_vnd(total_affina, short=True))
+c1.metric("Doanh thu trước thuế", fmt_vnd(total_rev, short=True), delta=delta_rev)
+c2.metric("Tổng thanh toán",       fmt_vnd(total_pay, short=True))
+c3.metric("Số hợp đồng",           fmt_num(total_hd), delta=delta_hd)
+c4.metric("Affina Revenue",        fmt_vnd(total_affina, short=True))
 
 # Hàng 2: 4 KPI phụ
 c5, c6, c7, c8 = st.columns(4)
-c5.metric("🎯 EST Bonus",             fmt_vnd(total_bonus, short=True))
-c6.metric("💎 Phí BH (Premium)",      fmt_vnd(total_prem, short=True))
-c7.metric("👥 Sale active",            fmt_num(n_sales))
-c8.metric("📊 AVG DT / HĐ",            fmt_vnd(avg_per_hd, short=True))
+c5.metric("EST Bonus",             fmt_vnd(total_bonus, short=True))
+c6.metric("Phí BH (Premium)",      fmt_vnd(total_prem, short=True))
+c7.metric("Sale active",            fmt_num(n_sales))
+c8.metric("AVG DT / HĐ",            fmt_vnd(avg_per_hd, short=True))
 
 st.divider()
 
 # ============================================================================
 # SECTION 2 — Xu hướng & Cơ cấu (2 cột)
 # ============================================================================
-st.markdown("### 📊 Xu hướng & Cơ cấu")
+st.markdown("### Xu hướng & Cơ cấu")
 col_left, col_right = st.columns([3, 2])
 
 with col_left:
@@ -188,7 +188,7 @@ st.divider()
 # ============================================================================
 # SECTION 3 — Sparkline 30 ngày gần nhất
 # ============================================================================
-st.markdown("### 📅 30 ngày gần nhất (trong khoảng lọc)")
+st.markdown("### 30 ngày gần nhất (trong khoảng lọc)")
 if DATE_COL in df.columns and df[DATE_COL].notna().any():
     last_date = df[DATE_COL].max()
     d30 = df[df[DATE_COL] >= (last_date - pd.Timedelta(days=30))]
@@ -202,17 +202,17 @@ if DATE_COL in df.columns and df[DATE_COL].notna().any():
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.caption("💰 Doanh thu / ngày")
+            st.caption("Doanh thu / ngày")
             st.line_chart(daily.set_index("date")["revenue"], height=160)
             st.metric("Tổng 30 ngày", fmt_vnd(daily["revenue"].sum(), short=True),
                       delta=f"TB {fmt_vnd(daily['revenue'].mean(), short=True)}/ngày")
         with c2:
-            st.caption("📋 Số HĐ / ngày")
+            st.caption("Số HĐ / ngày")
             st.line_chart(daily.set_index("date")["n_hd"], height=160)
             st.metric("Tổng 30 ngày", fmt_num(daily["n_hd"].sum()),
                       delta=f"TB {daily['n_hd'].mean():.0f} HĐ/ngày")
         with c3:
-            st.caption("🏢 Affina Revenue / ngày")
+            st.caption("Affina Revenue / ngày")
             st.line_chart(daily.set_index("date")["affina"], height=160)
             st.metric("Tổng 30 ngày", fmt_vnd(daily["affina"].sum(), short=True),
                       delta=f"TB {fmt_vnd(daily['affina'].mean(), short=True)}/ngày")
@@ -224,7 +224,7 @@ st.divider()
 # ============================================================================
 # SECTION 4 — Top 10 (2 bảng)
 # ============================================================================
-st.markdown("### 🏆 Top 10")
+st.markdown("### Top 10")
 col1, col2 = st.columns(2)
 
 with col1:
@@ -276,11 +276,11 @@ st.divider()
 # ============================================================================
 # SECTION 5 — Navigation hint
 # ============================================================================
-st.markdown("### 🧭 Khám phá sâu hơn")
+st.markdown("### Khám phá sâu hơn")
 st.info(
     "👈 Chọn trang khác ở sidebar bên trái để xem chi tiết:\n\n"
-    "- **📊 Kênh & Sản phẩm** — Sunburst, Treemap, top sản phẩm\n"
-    "- **👥 Đội ngũ Sales** — Ranking sale, BDM/BDD, Sankey, scatter\n"
-    "- **📅 Phân tích thời gian** — YoY, MoM, heatmap tuần × thứ\n"
-    "- **🔍 Chi tiết & Filter** — Tra cứu, download CSV/Excel"
+    "- **Kênh & Sản phẩm** — Sunburst, Treemap, top sản phẩm\n"
+    "- **Đội ngũ Sales** — Ranking sale, BDM/BDD, Sankey, scatter\n"
+    "- **Phân tích thời gian** — YoY, MoM, heatmap tuần × thứ\n"
+    "- **Chi tiết & Filter** — Tra cứu, download CSV/Excel"
 )

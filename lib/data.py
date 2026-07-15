@@ -50,7 +50,7 @@ def _get_db_uri() -> str:
     except Exception:
         uri = os.environ.get("SUPABASE_DB_URI")
         if not uri:
-            st.error("❌ Thiếu `SUPABASE_DB_URI` trong secrets hoặc env")
+            st.error("Thiếu `SUPABASE_DB_URI` trong secrets hoặc env")
             st.stop()
         return uri
 
@@ -70,8 +70,8 @@ def load_master_data() -> pd.DataFrame:
     try:
         df = pd.read_sql(text('SELECT * FROM dashboard_master_data'), engine)
     except Exception as e:
-        st.error(f"❌ Không đọc được bảng dashboard_master_data: {e}")
-        st.info("💡 Có thể job GitHub Actions chưa chạy lần đầu. "
+        st.error(f"Không đọc được bảng dashboard_master_data: {e}")
+        st.info("Có thể job GitHub Actions chưa chạy lần đầu. "
                 "Vào GitHub → Actions → Build Dashboard Data → Run workflow.")
         st.stop()
 
@@ -104,7 +104,7 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     Render sidebar filters. Return dict of applied filters.
     Sidebar hiển thị chung cho mọi trang → import và gọi từ mọi page.
     """
-    st.sidebar.markdown("### 🎯 Bộ lọc chung")
+    st.sidebar.markdown("### Bộ lọc chung")
 
     # Date range
     date_min = df[DATE_COL].min()
@@ -115,7 +115,7 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
         date_max = pd.Timestamp.today()
 
     date_range = st.sidebar.date_input(
-        "📅 Khoảng thời gian",
+        "Khoảng thời gian",
         value=(date_min.date(), date_max.date()),
         min_value=date_min.date(),
         max_value=date_max.date(),
@@ -129,31 +129,31 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     # Source
     sources = sorted(df["Source"].dropna().unique().tolist()) if "Source" in df.columns else []
     selected_sources = st.sidebar.multiselect(
-        "🎨 Source", options=sources, default=sources
+        "Source", options=sources, default=sources
     )
 
     # Channel
     channels = sorted(df["Channel"].dropna().unique().tolist()) if "Channel" in df.columns else []
     selected_channels = st.sidebar.multiselect(
-        "📡 Channel", options=channels, default=channels
+        "Channel", options=channels, default=channels
     )
 
     # Loại BH
     loai_bh = sorted(df["Loại bảo hiểm"].dropna().unique().tolist()) if "Loại bảo hiểm" in df.columns else []
     selected_loai = st.sidebar.multiselect(
-        "🛡️ Loại bảo hiểm", options=loai_bh, default=loai_bh
+        "Loại bảo hiểm", options=loai_bh, default=loai_bh
     )
 
     # Nhà BH
     nha_bh = sorted(df["Nhà BH"].dropna().unique().tolist()) if "Nhà BH" in df.columns else []
     selected_nha = st.sidebar.multiselect(
-        "🏢 Nhà bảo hiểm", options=nha_bh, default=[]  # default trống → không lọc
+        "Nhà bảo hiểm", options=nha_bh, default=[]  # default trống → không lọc
     )
 
     st.sidebar.divider()
 
     # Refresh button
-    if st.sidebar.button("🔄 Refresh Data", use_container_width=True):
+    if st.sidebar.button("Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -170,12 +170,12 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
             if updated_at.tzinfo is None:
                 updated_at = updated_at.tz_localize("UTC")
             vn_time = updated_at.astimezone(timezone(timedelta(hours=7)))
-            st.sidebar.caption(f"🕒 Cập nhật gần nhất:\n**{vn_time.strftime('%d/%m/%Y %H:%M')}** (VN)")
-        st.sidebar.caption(f"📦 Rows: **{meta.get('row_count', 0):,}**")
-        st.sidebar.caption(f"⏱ Build: {meta.get('duration_sec', 0)}s")
+            st.sidebar.caption(f"Cập nhật gần nhất:\n**{vn_time.strftime('%d/%m/%Y %H:%M')}** (VN)")
+        st.sidebar.caption(f"Rows: **{meta.get('row_count', 0):,}**")
+        st.sidebar.caption(f"Build: {meta.get('duration_sec', 0)}s")
 
     st.sidebar.divider()
-    st.sidebar.caption("Made with ❤️ for Affina")
+    st.sidebar.caption("Made for Affina")
 
     return {
         "start_date": pd.Timestamp(start_date),
@@ -245,4 +245,4 @@ def apply_plotly_layout(fig, title: str = "", height: int | None = None):
 
 
 def empty_state(msg: str = "Không có dữ liệu phù hợp với bộ lọc hiện tại."):
-    st.info(f"ℹ️ {msg}")
+    st.info(f"{msg}")
