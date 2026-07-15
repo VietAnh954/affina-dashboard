@@ -1,0 +1,21 @@
+[theme]
+# Affina brand colors — có thể chỉnh sau
+primaryColor       = "#1F4E78"
+backgroundColor    = "#FFFFFF"
+secondaryBackgroundColor = "#F5F7FA"
+textColor          = "#2C3E50"
+font               = "sans serif"
+
+[server]
+# Không cần chạy dev tools trên production
+runOnSave = false
+# Cho phép max 200MB upload (dùng khi user tự upload file phân tích)
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false
+
+[client]
+# Toolbar chỉ show cho dev (chủ app), user cuối không cần
+toolbarMode = "minimal"
+showErrorDetails = true

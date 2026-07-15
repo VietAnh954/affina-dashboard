@@ -1,0 +1,11 @@
+# ============================================================================
+# Requirements cho Streamlit Community Cloud
+# Chỉ chứa deps cần để CHẠY dashboard (đọc Supabase + render chart)
+# ============================================================================
+streamlit>=1.32,<2.0
+pandas>=2.0
+plotly>=5.18
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+openpyxl>=3.1
+numpy>=1.24

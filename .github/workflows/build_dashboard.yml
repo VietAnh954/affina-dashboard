@@ -1,0 +1,63 @@
+name: Build Dashboard Data
+
+on:
+  # Cron: 10:00 VN mỗi ngày = 03:00 UTC
+  # Công thức: giờ VN - 7 = giờ UTC
+  schedule:
+    - cron: '0 3 * * *'
+  # Cho phép chạy tay từ GitHub UI
+  workflow_dispatch:
+  # Chạy khi push code build script (test change)
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build_dashboard_data.py'
+      - 'requirements-actions.txt'
+      - '.github/workflows/build_dashboard.yml'
+
+# Chỉ cho phép 1 run duplicated cùng thời điểm
+concurrency:
+  group: build-dashboard-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & Push Dashboard Data
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements-actions.txt
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-actions.txt
+
+      - name: 🚀 Run build_dashboard_data.py
+        env:
+          SUPABASE_DB_URI:      ${{ secrets.SUPABASE_DB_URI }}
+          GOOGLE_CLIENT_ID:     ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          TZ: Asia/Ho_Chi_Minh
+          PYTHONUNBUFFERED: '1'
+        run: python scripts/build_dashboard_data.py
+
+      - name: 📊 Job Summary
+        if: always()
+        run: |
+          echo "## Build Dashboard Data — $(date '+%Y-%m-%d %H:%M:%S %Z')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Dashboard: https://affina-dashboard.streamlit.app" >> $GITHUB_STEP_SUMMARY
