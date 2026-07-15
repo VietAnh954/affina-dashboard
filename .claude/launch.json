@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Affina Dashboard (Streamlit)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "streamlit", "run", "dashboard.py", "--server.port=8501"],
+      "port": 8501
+    },
+    {
+      "name": "ETL Build Script",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["scripts/build_dashboard_data.py"],
+      "port": 0
+    }
+  ]
+}
