@@ -1,11 +1,19 @@
-# ============================================================================
-# Requirements cho Streamlit Community Cloud
-# Chỉ chứa deps cần để CHẠY dashboard (đọc Supabase + render chart)
-# ============================================================================
-streamlit>=1.32,<2.0
-pandas>=2.0
-plotly>=5.18
-sqlalchemy>=2.0
-psycopg2-binary>=2.9
-openpyxl>=3.1
-numpy>=1.24
+# Streamlit Cloud requirements for Affina Dashboard
+# Python 3.11+ recommended
+
+# Core
+streamlit>=1.32.0
+pandas>=2.1.0
+numpy>=1.26.0
+
+# Charts
+plotly>=5.18.0
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+
+# --- MỚI: cho trang 7/8/9 (Executive Insights, Customer Analytics, Forecast) ---
+scipy>=1.11.0          # statistical tests, correlation, IQR outlier detection
+statsmodels>=0.14.0    # time-series forecast, seasonality decomposition
+scikit-learn>=1.3.0    # KMeans clustering cho RFM segmentation
