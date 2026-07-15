@@ -166,8 +166,15 @@ if not df_bhsk.empty:
         if col_name not in df_bhsk.columns:
             place.info(f"Không có cột {col_name}")
             continue
-        s = df_bhsk[col_name].fillna("").astype(str).str.strip()
-        has = s.apply(lambda x: "Có" if x not in ("", "nan", "None", "0") else "Không")
+        def _has_addon(x):
+            if pd.isna(x):
+                return "Không"
+            v = str(x).strip().lower()
+            if v in ("", "nan", "none", "0", "không", "khong", "no", "false", "0.0"):
+                return "Không"
+            return "Có"
+        s = df_bhsk[col_name]
+        has = s.apply(_has_addon)
         agg = (pd.DataFrame({"has": has, "dt": df_bhsk["Doanh thu trước thuế"].values})
                  .groupby("has", as_index=False)["dt"].sum())
         if agg.empty:

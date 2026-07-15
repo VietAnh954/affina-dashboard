@@ -102,7 +102,7 @@ def load_meta() -> dict:
 def render_sidebar_filters(df: pd.DataFrame) -> dict:
     """
     Render sidebar filters. Return dict of applied filters.
-    Sidebar hiển thị chung cho mọi trang → import và gọi từ mọi page.
+    Persist state across pages and apply cascade filtering.
     """
     st.sidebar.markdown("### Bộ lọc chung")
 
@@ -114,43 +114,99 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     if pd.isna(date_max):
         date_max = pd.Timestamp.today()
 
+    if "f_date" not in st.session_state:
+        st.session_state["f_date"] = (date_min.date(), date_max.date())
+    
+    # Ensure value fits min/max (in case data changes)
+    val_date = st.session_state["f_date"]
+    if isinstance(val_date, tuple) and len(val_date) == 2:
+        val_start = max(date_min.date(), min(date_max.date(), val_date[0]))
+        val_end = max(date_min.date(), min(date_max.date(), val_date[1]))
+        st.session_state["f_date"] = (val_start, val_end)
+
     date_range = st.sidebar.date_input(
         "Khoảng thời gian",
-        value=(date_min.date(), date_max.date()),
+        value=st.session_state["f_date"],
         min_value=date_min.date(),
         max_value=date_max.date(),
         format="DD/MM/YYYY",
+        key="f_date",
     )
     if isinstance(date_range, tuple) and len(date_range) == 2:
         start_date, end_date = date_range
     else:
         start_date, end_date = date_min.date(), date_max.date()
 
-    # Source
+    # --- CASCADE FILTERING & PERSISTENCE ---
+
+    # 1. Source (Base filter)
     sources = sorted(df["Source"].dropna().unique().tolist()) if "Source" in df.columns else []
+    if "f_source" not in st.session_state:
+        st.session_state["f_source"] = sources
+    else:
+        st.session_state["f_source"] = [s for s in st.session_state["f_source"] if s in sources]
+
     selected_sources = st.sidebar.multiselect(
-        "Source", options=sources, default=sources
+        "Source", options=sources,
+        key="f_source",
     )
 
-    # Channel
-    channels = sorted(df["Channel"].dropna().unique().tolist()) if "Channel" in df.columns else []
+    # 2. Channel (Depends on Source)
+    if selected_sources:
+        df_c = df[df["Source"].isin(selected_sources)]
+    else:
+        df_c = df
+    channels = sorted(df_c["Channel"].dropna().unique().tolist()) if "Channel" in df_c.columns else []
+    if "f_channel" not in st.session_state:
+        st.session_state["f_channel"] = channels
+    else:
+        st.session_state["f_channel"] = [c for c in st.session_state["f_channel"] if c in channels]
+
     selected_channels = st.sidebar.multiselect(
-        "Channel", options=channels, default=channels
+        "Channel", options=channels,
+        key="f_channel",
     )
 
-    # Loại BH
-    loai_bh = sorted(df["Loại bảo hiểm"].dropna().unique().tolist()) if "Loại bảo hiểm" in df.columns else []
+    # 3. Loại bảo hiểm (Depends on Source & Channel)
+    df_l = df_c
+    if selected_channels:
+        df_l = df_l[df_l["Channel"].isin(selected_channels)]
+    loai_bh = sorted(df_l["Loại bảo hiểm"].dropna().unique().tolist()) if "Loại bảo hiểm" in df_l.columns else []
+    if "f_loai_bh" not in st.session_state:
+        st.session_state["f_loai_bh"] = loai_bh
+    else:
+        st.session_state["f_loai_bh"] = [l for l in st.session_state["f_loai_bh"] if l in loai_bh]
+
     selected_loai = st.sidebar.multiselect(
-        "Loại bảo hiểm", options=loai_bh, default=loai_bh
+        "Loại bảo hiểm", options=loai_bh,
+        key="f_loai_bh",
     )
 
-    # Nhà BH
-    nha_bh = sorted(df["Nhà BH"].dropna().unique().tolist()) if "Nhà BH" in df.columns else []
+    # 4. Nhà bảo hiểm (Depends on Source & Channel & Loại BH)
+    df_n = df_l
+    if selected_loai:
+        df_n = df_n[df_n["Loại bảo hiểm"].isin(selected_loai)]
+    nha_bh = sorted(df_n["Nhà BH"].dropna().unique().tolist()) if "Nhà BH" in df_n.columns else []
+    if "f_nha_bh" not in st.session_state:
+        st.session_state["f_nha_bh"] = []  # Default empty
+    else:
+        st.session_state["f_nha_bh"] = [n for n in st.session_state["f_nha_bh"] if n in nha_bh]
+
     selected_nha = st.sidebar.multiselect(
-        "Nhà bảo hiểm", options=nha_bh, default=[]  # default trống → không lọc
+        "Nhà bảo hiểm", options=nha_bh,
+        key="f_nha_bh",
     )
 
     st.sidebar.divider()
+
+    # Reset Filters Button (Priority 3 Improvement #9)
+    if st.sidebar.button("Reset Filters", use_container_width=True):
+        st.session_state["f_date"] = (date_min.date(), date_max.date())
+        st.session_state["f_source"] = sources
+        st.session_state["f_channel"] = sorted(df["Channel"].dropna().unique().tolist()) if "Channel" in df.columns else []
+        st.session_state["f_loai_bh"] = sorted(df["Loại bảo hiểm"].dropna().unique().tolist()) if "Loại bảo hiểm" in df.columns else []
+        st.session_state["f_nha_bh"] = []
+        st.rerun()
 
     # Refresh button
     if st.sidebar.button("Refresh Data", use_container_width=True):
@@ -211,9 +267,10 @@ def fmt_vnd(x, short: bool = False) -> str:
         return "-"
     x = float(x)
     if short:
-        for unit, div in [("T", 1e12), ("B", 1e9), ("M", 1e6), ("K", 1e3)]:
-            if abs(x) >= div:
-                return f"{x/div:,.2f}{unit} ₫"
+        if abs(x) >= 1e12: return f"{x/1e12:,.2f} nghìn tỷ"
+        if abs(x) >= 1e9:  return f"{x/1e9:,.2f} tỷ"
+        if abs(x) >= 1e6:  return f"{x/1e6:,.1f} tr"
+        if abs(x) >= 1e3:  return f"{x/1e3:,.0f}k"
         return f"{x:,.0f} ₫"
     return f"{x:,.0f} ₫"
 
@@ -244,5 +301,5 @@ def apply_plotly_layout(fig, title: str = "", height: int | None = None):
     return fig
 
 
-def empty_state(msg: str = "Không có dữ liệu phù hợp với bộ lọc hiện tại."):
-    st.info(f"{msg}")
+def empty_state(msg: str = "Không có dữ liệu phù hợp với bộ lọc hiện tại. Thử nới rộng khoảng thời gian hoặc chọn thêm Source/Channel ở cột lọc."):
+    st.info(msg)
