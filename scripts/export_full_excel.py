@@ -68,6 +68,20 @@ CURRENCY_COLS = {
 DATE_COLS_KEYWORDS = ["Ngày", "date", "month"]
 
 
+def _strip_tz(df: pd.DataFrame) -> pd.DataFrame:
+    """Bỏ timezone khỏi mọi cột datetime — Excel không hỗ trợ tz-aware datetime.
+    Cột _ingested_at từ Supabase (TIMESTAMPTZ) gây lỗi nếu không strip."""
+    df = df.copy()
+    for c in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[c]):
+            try:
+                if getattr(df[c].dt, "tz", None) is not None:
+                    df[c] = df[c].dt.tz_localize(None)
+            except (TypeError, AttributeError):
+                pass
+    return df
+
+
 def _apply_format(ws, df, header_color="305496"):
     """Format 1 sheet — header, filter, freeze, auto-width, number format."""
     if ws.max_row < 1:
@@ -355,6 +369,9 @@ def main():
             for ch in ["/", "\\", "?", "*", "[", "]", ":"]:
                 safe_name = safe_name.replace(ch, "_")
             safe_name = safe_name[:31]
+
+            # Strip timezone khỏi datetime columns (Excel không hỗ trợ tz-aware)
+            sheet_df = _strip_tz(sheet_df)
 
             sheet_df.to_excel(writer, sheet_name=safe_name, index=False)
             _apply_format(writer.sheets[safe_name], sheet_df,

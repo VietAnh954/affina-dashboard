@@ -153,6 +153,21 @@ def _sanitize_sheet_name(name: str) -> str:
     return name[:31]
 
 
+def _strip_tz(df: pd.DataFrame) -> pd.DataFrame:
+    """Bỏ timezone khỏi mọi cột datetime — Excel không hỗ trợ tz-aware datetime.
+    Cột _ingested_at (TIMESTAMPTZ) từ Supabase gây lỗi nếu không strip."""
+    df = df.copy()
+    for c in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[c]):
+            try:
+                # Nếu có timezone → convert UTC rồi bỏ tz
+                if getattr(df[c].dt, "tz", None) is not None:
+                    df[c] = df[c].dt.tz_localize(None)
+            except (TypeError, AttributeError):
+                pass
+    return df
+
+
 def build_excel(
     df: pd.DataFrame,
     columns: list[str],
@@ -167,6 +182,9 @@ def build_excel(
     for c in df_out.columns:
         if c in DATE_COLS or "Ngày" in c:
             df_out[c] = pd.to_datetime(df_out[c], errors="coerce")
+
+    # Strip timezone (Excel không hỗ trợ tz-aware datetime)
+    df_out = _strip_tz(df_out)
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -196,6 +214,7 @@ def build_excel(
                 for c in sub.columns:
                     if c in DATE_COLS or "Ngày" in c:
                         sub[c] = pd.to_datetime(sub[c], errors="coerce")
+                sub = _strip_tz(sub)
                 sheet_name = _sanitize_sheet_name(src)
                 sub.to_excel(writer, sheet_name=sheet_name, index=False)
                 if HAS_OPENPYXL:
@@ -207,6 +226,7 @@ def build_excel(
                 for c in sub.columns:
                     if c in DATE_COLS or "Ngày" in c:
                         sub[c] = pd.to_datetime(sub[c], errors="coerce")
+                sub = _strip_tz(sub)
                 sheet_name = _sanitize_sheet_name(lb)
                 sub.to_excel(writer, sheet_name=sheet_name, index=False)
                 if HAS_OPENPYXL:
@@ -221,6 +241,7 @@ def build_excel(
                 for c in sub.columns:
                     if c in DATE_COLS or "Ngày" in c:
                         sub[c] = pd.to_datetime(sub[c], errors="coerce")
+                sub = _strip_tz(sub)
                 sheet_name = _sanitize_sheet_name(p)
                 sub.to_excel(writer, sheet_name=sheet_name, index=False)
                 if HAS_OPENPYXL:
