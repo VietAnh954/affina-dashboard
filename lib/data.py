@@ -185,6 +185,9 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     st.sidebar.divider()
     st.sidebar.caption("Made with for Affina")
 
+    # Language toggle
+    render_lang_toggle()
+
     return {
         "start_date": pd.Timestamp(start_date),
         "end_date": pd.Timestamp(end_date),
@@ -214,14 +217,80 @@ def apply_filters(df: pd.DataFrame, f: dict) -> pd.DataFrame:
 # ============================================================================
 # Formatting helpers
 # ============================================================================
+def _get_lang() -> str:
+    """Lấy ngôn ngữ hiện tại từ session_state."""
+    return st.session_state.get("_lang", "vi")
+
+
+def set_lang(lang: str) -> None:
+    """Set ngôn ngữ: 'vi' hoặc 'en'."""
+    st.session_state["_lang"] = lang
+
+
+# Bảng dịch ngắn gọn — thêm key khi cần
+_TRANSLATIONS = {
+    # Sidebar
+    "Bộ lọc chung":           {"vi": "Bộ lọc chung",           "en": "Filters"},
+    "Khoảng thời gian":       {"vi": "Khoảng thời gian",       "en": "Date range"},
+    "Source":                  {"vi": "Source",                  "en": "Source"},
+    "Channel":                 {"vi": "Channel",                 "en": "Channel"},
+    "Loại bảo hiểm":          {"vi": "Loại bảo hiểm",          "en": "Insurance type"},
+    "Nhà bảo hiểm":           {"vi": "Nhà bảo hiểm",           "en": "Insurer"},
+    "Refresh Data":            {"vi": "Làm mới dữ liệu",       "en": "Refresh Data"},
+    "Data cập nhật":           {"vi": "Data cập nhật",          "en": "Last updated"},
+    "Tổng số dòng":            {"vi": "Tổng số dòng",            "en": "Total rows"},
+    # KPI
+    "Doanh thu trước thuế":    {"vi": "Doanh thu trước thuế",    "en": "Pre-tax Revenue"},
+    "Tổng thanh toán":         {"vi": "Tổng thanh toán",         "en": "Total Payment"},
+    "Số hợp đồng":             {"vi": "Số hợp đồng",             "en": "Contracts"},
+    "Sale active":             {"vi": "Sale đang hoạt động",     "en": "Active Sales"},
+}
+
+
+def t(key: str) -> str:
+    """Dịch 1 key sang ngôn ngữ hiện tại. Nếu không có key → trả về key gốc."""
+    lang = _get_lang()
+    entry = _TRANSLATIONS.get(key)
+    if entry:
+        return entry.get(lang, key)
+    return key
+
+
+def render_lang_toggle() -> None:
+    """Hiển thị nút chuyển ngôn ngữ ở sidebar."""
+    lang = _get_lang()
+    label = "EN | **VI**" if lang == "vi" else "**EN** | VI"
+    st.sidebar.markdown(f"Ngôn ngữ: {label}")
+    if lang == "vi":
+        if st.sidebar.button("Switch to English", key="_lang_btn", use_container_width=True):
+            set_lang("en")
+            st.rerun()
+    else:
+        if st.sidebar.button("Chuyển sang Tiếng Việt", key="_lang_btn", use_container_width=True):
+            set_lang("vi")
+            st.rerun()
+
+
 def fmt_vnd(x, short: bool = False) -> str:
     if pd.isna(x):
         return "-"
     x = float(x)
+    lang = _get_lang()
     if short:
-        for unit, div in [("T", 1e12), ("B", 1e9), ("M", 1e6), ("K", 1e3)]:
+        if lang == "vi":
+            units = [("nghìn tỷ", 1e12), ("tỷ", 1e9), ("tr", 1e6), ("k", 1e3)]
+        else:
+            units = [("T", 1e12), ("B", 1e9), ("M", 1e6), ("K", 1e3)]
+        for unit, div in units:
             if abs(x) >= div:
-                return f"{x/div:,.2f}{unit} ₫"
+                val = x / div
+                # 2 decimal nếu < 10, 1 decimal nếu < 100, 0 nếu lớn
+                if abs(val) < 10:
+                    return f"{val:,.2f} {unit}"
+                elif abs(val) < 100:
+                    return f"{val:,.1f} {unit}"
+                else:
+                    return f"{val:,.0f} {unit}"
         return f"{x:,.0f} ₫"
     return f"{x:,.0f} ₫"
 

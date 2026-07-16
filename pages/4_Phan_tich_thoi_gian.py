@@ -183,9 +183,10 @@ by_day = by_day.sort_values("date_only")
 by_day["cum"] = by_day.groupby("Source")["Doanh thu trước thuế"].cumsum()
 
 if not by_day.empty:
-    fig = px.area(
+    fig = px.line(
         by_day, x="date_only", y="cum", color="Source",
         color_discrete_map=COLORS, line_shape="spline",
+        markers=False,
     )
     fig.update_yaxes(title="Doanh thu cộng dồn (VNĐ)", tickformat=",")
     fig.update_xaxes(title="")

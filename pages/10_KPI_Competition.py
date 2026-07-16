@@ -39,6 +39,96 @@ st.set_page_config(page_title="KPI Competition", layout="wide")
 # ── Auth ──
 require_auth("kpi", "KPI Competition — CLB Tinh Hoa Affina")
 
+# ── KPI Dark Theme CSS (trích từ poster CLB Tinh Hoa) ──
+st.markdown("""
+<style>
+/* Background gradient tím-xanh đậm giống poster KPI */
+[data-testid="stAppViewContainer"] {
+    background: linear-gradient(160deg, #0B0E2E 0%, #1A1040 35%, #2A1248 60%, #1A1040 100%);
+}
+[data-testid="stHeader"] {
+    background: rgba(11, 14, 46, 0.9);
+}
+/* Text chính → trắng */
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] .stMarkdown {
+    color: #F0E6D8 !important;
+}
+/* Metric value → vàng gold */
+[data-testid="stMetricValue"] {
+    color: #D4A847 !important;
+    font-weight: 700;
+}
+[data-testid="stMetricDelta"] {
+    opacity: 0.9;
+}
+/* Metric label */
+[data-testid="stMetricLabel"] p {
+    color: #C0B090 !important;
+}
+/* Card / container nền */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"] > div > div {
+    border-radius: 8px;
+}
+/* Tab text */
+[data-testid="stAppViewContainer"] button[data-baseweb="tab"] {
+    color: #C0B090 !important;
+}
+[data-testid="stAppViewContainer"] button[data-baseweb="tab"][aria-selected="true"] {
+    color: #D4A847 !important;
+    border-bottom-color: #D4A847 !important;
+}
+/* Table header */
+[data-testid="stAppViewContainer"] thead th {
+    background-color: rgba(30, 20, 60, 0.8) !important;
+    color: #D4A847 !important;
+}
+/* Table cells */
+[data-testid="stAppViewContainer"] tbody td {
+    color: #F0E6D8 !important;
+}
+/* Info/success/warning boxes */
+[data-testid="stAppViewContainer"] .stAlert {
+    background-color: rgba(30, 20, 60, 0.6) !important;
+    border-color: #D4A847 !important;
+}
+/* Progress bar */
+[data-testid="stAppViewContainer"] .stProgress > div > div > div {
+    background-color: #D4A847 !important;
+}
+/* Divider */
+[data-testid="stAppViewContainer"] hr {
+    border-color: rgba(212, 168, 71, 0.3) !important;
+}
+/* Caption */
+[data-testid="stAppViewContainer"] .stCaption p {
+    color: #9A8A6A !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+def _kpi_layout(fig, title="", height=400):
+    """Override layout cho dark background KPI page."""
+    fig = _kpi_layout(fig, title=title, height=height)
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(20,15,50,0.3)",
+        font=dict(color="#F0E6D8"),
+        title=dict(font=dict(color="#D4A847")) if title else None,
+        xaxis=dict(gridcolor="rgba(212,168,71,0.15)", color="#C0B090"),
+        yaxis=dict(gridcolor="rgba(212,168,71,0.15)", color="#C0B090"),
+        legend=dict(font=dict(color="#F0E6D8")),
+        hoverlabel=dict(bgcolor="#1A1040", font_color="#F0E6D8", bordercolor="#D4A847"),
+    )
+    return fig
+
+
 # ============================================================================
 # CONFIG
 # ============================================================================
@@ -311,18 +401,18 @@ with col_bar:
             y=top10[sale_col], x=top10["Điểm quy đổi"],
             name="Điểm doanh thu",
             orientation="h",
-            marker_color="#B44BC8",
+            marker_color="#D4A847",
             text=top10["Điểm quy đổi"], textposition="inside",
         ))
         fig.add_trace(go.Bar(
             y=top10[sale_col], x=top10["Bonus tháng"],
             name="Bonus rank tháng",
             orientation="h",
-            marker_color="#F06EC2",
+            marker_color="#E8A040",
             text=top10["Bonus tháng"], textposition="inside",
         ))
         fig.update_layout(barmode="stack", yaxis=dict(autorange="reversed"))
-        st.plotly_chart(apply_plotly_layout(fig, title="Top 10 tổng điểm (stacked)", height=400),
+        st.plotly_chart(_kpi_layout(fig, title="Top 10 tổng điểm (stacked)", height=400),
                         use_container_width=True)
 
 with col_gap:
@@ -371,7 +461,7 @@ if top10_names:
     )
     fig.update_xaxes(dtick="M1", tickformat="%m/%Y")
     fig.update_layout(hovermode="x unified")
-    st.plotly_chart(apply_plotly_layout(fig, title="", height=420), use_container_width=True)
+    st.plotly_chart(_kpi_layout(fig, title="", height=420), use_container_width=True)
 else:
     empty_state()
 
@@ -404,7 +494,7 @@ if top_n_names:
         labels=dict(color="Hạng"),
     )
     fig.update_layout(height=max(300, 35 * n_show))
-    st.plotly_chart(apply_plotly_layout(fig, title="Hạng mỗi tháng (1 = dẫn đầu, xanh = tốt, hồng = thấp)"),
+    st.plotly_chart(_kpi_layout(fig, title="Hạng mỗi tháng (1 = dẫn đầu, xanh = tốt, hồng = thấp)"),
                     use_container_width=True)
     st.caption("Xanh mint = hạng cao, hồng = hạng thấp. Ô trống = không có HĐ tháng đó.")
 
@@ -468,7 +558,7 @@ if len(all_sales) >= 2:
             polar=dict(radialaxis=dict(visible=True, range=[0, 1.1])),
             height=380,
         )
-        st.plotly_chart(apply_plotly_layout(fig, title=""), use_container_width=True)
+        st.plotly_chart(_kpi_layout(fig, title=""), use_container_width=True)
 
         # Monthly comparison
         monthly_ab = monthly_rev[monthly_rev[sale_col].isin([sale_a, sale_b])].copy()
@@ -483,7 +573,7 @@ if len(all_sales) >= 2:
                 labels={"month_ts": "Tháng", "points": "Điểm"},
             )
             fig2.update_xaxes(dtick="M1", tickformat="%m/%Y")
-            st.plotly_chart(apply_plotly_layout(fig2, title="Điểm theo tháng", height=320),
+            st.plotly_chart(_kpi_layout(fig2, title="Điểm theo tháng", height=320),
                             use_container_width=True)
     elif sale_a == sale_b:
         st.info("Chọn 2 sale khác nhau để so sánh.")
@@ -523,7 +613,7 @@ if len(ranking) >= 5:
     fig.add_trace(go.Histogram(
         x=ranking["Tổng điểm"],
         nbinsx=30,
-        marker_color="#B44BC8",
+        marker_color="#D4A847",
         opacity=0.75,
     ))
     # Vẽ đường threshold cho từng cấp
@@ -542,7 +632,7 @@ if len(ranking) >= 5:
         showlegend=False,
         height=350,
     )
-    st.plotly_chart(apply_plotly_layout(fig, title=""), use_container_width=True)
+    st.plotly_chart(_kpi_layout(fig, title=""), use_container_width=True)
     st.caption("Đường đứt = ngưỡng vào vùng giải thưởng từng cấp. Sale nằm bên phải đường = đang trong zone.")
 
 st.divider()

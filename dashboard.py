@@ -142,12 +142,13 @@ with col_left:
                     .sum()
                     .rename(columns={"Doanh thu trước thuế": "revenue"}))
         if not grp.empty:
-            fig = px.area(
+            fig = px.line(
                 grp, x="month", y="revenue", color="Source",
                 color_discrete_map=COLORS,
+                markers=True,
                 labels={"month": "Tháng", "revenue": "Doanh thu (VNĐ)"},
             )
-            fig.update_traces(mode="lines+markers", line=dict(width=2.5), opacity=0.85)
+            fig.update_traces(line=dict(width=2.5))
             fig.update_layout(hovermode="x unified")
             fig.update_yaxes(tickformat=",.0f")
             fig.update_xaxes(dtick="M1", tickformat="%m/%Y")
