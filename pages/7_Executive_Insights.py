@@ -38,6 +38,10 @@ from lib.data import (
 # ============================================================================
 st.set_page_config(page_title="Executive Insights", layout="wide")
 
+from lib.auth import require_auth
+require_auth("executive", "Executive Insights")
+
+
 # Try import scipy - graceful degradation nếu không có
 try:
     from scipy import stats as sp_stats

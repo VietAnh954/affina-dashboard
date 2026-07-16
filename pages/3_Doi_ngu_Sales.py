@@ -15,6 +15,10 @@ from lib.data import (
 )
 
 st.set_page_config(page_title="Đội ngũ Sales", layout="wide")
+
+from lib.auth import require_auth
+require_auth("sales", "Đội ngũ Sales")
+
 st.title("Đội ngũ Sales")
 st.caption("Ranking sale, hiệu suất BDM/BDD, phát hiện star performer.")
 

@@ -32,6 +32,10 @@ from lib.data import (
 
 st.set_page_config(page_title="Forecast & Anomaly", layout="wide")
 
+from lib.auth import require_auth
+require_auth("forecast", "Forecast & Anomaly")
+
+
 # Try import statsmodels
 try:
     from statsmodels.tsa.holtwinters import ExponentialSmoothing

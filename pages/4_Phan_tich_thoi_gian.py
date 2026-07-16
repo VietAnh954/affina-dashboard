@@ -16,6 +16,10 @@ from lib.data import (
 )
 
 st.set_page_config(page_title="Phân tích thời gian", layout="wide")
+
+from lib.auth import require_auth
+require_auth("time", "Phân tích thời gian")
+
 st.title("Phân tích theo thời gian")
 st.caption("Xu hướng, mùa vụ, so sánh cùng kỳ, dự báo tái tục.")
 

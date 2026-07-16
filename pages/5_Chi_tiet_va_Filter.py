@@ -26,6 +26,10 @@ from lib.data import (
 
 st.set_page_config(page_title="Chi tiết & Export", layout="wide")
 
+from lib.auth import require_auth
+require_auth("export", "Chi tiết & Export")
+
+
 # ============================================================================
 # EXCEL FORMATTING
 # ============================================================================

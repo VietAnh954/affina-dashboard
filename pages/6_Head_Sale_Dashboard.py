@@ -41,6 +41,10 @@ from lib.data import (
 # ============================================================================
 st.set_page_config(page_title="Head Sale Dashboard", layout="wide")
 
+from lib.auth import require_auth
+require_auth("headsale", "Head Sale Dashboard")
+
+
 # Danh sách Head Sale (thêm/bớt trong tương lai — chỉ sửa dict này)
 HEAD_SALES = {
     "TRẦN THỊ THÙY AN": {

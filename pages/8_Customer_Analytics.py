@@ -34,6 +34,10 @@ from lib.data import (
 
 st.set_page_config(page_title="Customer Analytics", layout="wide")
 
+from lib.auth import require_auth
+require_auth("customer", "Customer Analytics")
+
+
 
 # ============================================================================
 # HELPERS
