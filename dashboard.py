@@ -28,7 +28,6 @@ from lib.data import (
 # ============================================================================
 st.set_page_config(
     page_title="Affina Sales Dashboard",
-    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
@@ -53,10 +52,10 @@ if df_raw.empty:
     st.warning("Chưa có dữ liệu trong bảng `dashboard_master_data`.")
     st.info(
         "**Cách khắc phục:**\n\n"
-        "1. Vào GitHub repo → Actions tab\n"
+        "1. Vào GitHub repo Actions tab\n"
         "2. Chọn workflow **Build Dashboard Data**\n"
-        "3. Click **Run workflow** → Run workflow\n"
-        "4. Chờ từ 3-5 phút, sau đó reload trang này"
+        "3. Click **Run workflow** Run workflow\n"
+        "4. Chờ ~3-5 phút, sau đó reload trang này"
     )
     st.stop()
 
@@ -75,34 +74,34 @@ st.markdown("### Chỉ số kinh doanh chính")
 def _sum(col: str) -> float:
     return float(df[col].sum()) if col in df.columns else 0.0
 
-total_rev    = _sum("Doanh thu trước thuế")
-total_pay    = _sum("Số tiền thanh toán")
-total_prem   = _sum("Phí BH (VNĐ)")
+total_rev = _sum("Doanh thu trước thuế")
+total_pay = _sum("Số tiền thanh toán")
+total_prem = _sum("Phí BH (VNĐ)")
 total_affina = _sum("Affina_Revenue")
-total_bonus  = _sum("EST_Bonus")
-total_hd     = df["Số hợp đồng"].nunique() if "Số hợp đồng" in df.columns else 0
-n_sales      = df["Họ tên sale"].nunique() if "Họ tên sale" in df.columns else 0
-avg_per_hd   = total_rev / total_hd if total_hd else 0
+total_bonus = _sum("EST_Bonus")
+total_hd = df["Số hợp đồng"].nunique() if "Số hợp đồng" in df.columns else 0
+n_sales = df["Họ tên sale"].nunique() if "Họ tên sale" in df.columns else 0
+avg_per_hd = total_rev / total_hd if total_hd else 0
 
 # So sánh với period trước cùng độ dài (để hiện delta)
 delta_rev = delta_hd = None
 if DATE_COL in df.columns and df[DATE_COL].notna().any():
     period_len = (filters["end_date"] - filters["start_date"]).days + 1
     prev_start = filters["start_date"] - pd.Timedelta(days=period_len)
-    prev_end   = filters["start_date"] - pd.Timedelta(days=1)
+    prev_end = filters["start_date"] - pd.Timedelta(days=1)
     df_prev = df_raw[
         (df_raw[DATE_COL] >= prev_start) &
         (df_raw[DATE_COL] <= prev_end + pd.Timedelta(days=1))
     ]
     # Apply cùng filter Source/Channel/Loại BH/Nhà BH lên period trước
-    if filters["sources"]:  df_prev = df_prev[df_prev["Source"].isin(filters["sources"])]
+    if filters["sources"]: df_prev = df_prev[df_prev["Source"].isin(filters["sources"])]
     if filters["channels"]: df_prev = df_prev[df_prev["Channel"].isin(filters["channels"])]
-    if filters["loai_bh"]:  df_prev = df_prev[df_prev["Loại bảo hiểm"].isin(filters["loai_bh"])]
-    if filters["nha_bh"]:   df_prev = df_prev[df_prev["Nhà BH"].isin(filters["nha_bh"])]
+    if filters["loai_bh"]: df_prev = df_prev[df_prev["Loại bảo hiểm"].isin(filters["loai_bh"])]
+    if filters["nha_bh"]: df_prev = df_prev[df_prev["Nhà BH"].isin(filters["nha_bh"])]
 
     if not df_prev.empty:
         prev_rev = float(df_prev["Doanh thu trước thuế"].sum()) if "Doanh thu trước thuế" in df_prev else 0
-        prev_hd  = df_prev["Số hợp đồng"].nunique() if "Số hợp đồng" in df_prev else 0
+        prev_hd = df_prev["Số hợp đồng"].nunique() if "Số hợp đồng" in df_prev else 0
         if prev_rev > 0:
             delta_rev = f"{((total_rev - prev_rev) / prev_rev) * 100:+.1f}% so kỳ trước"
         if prev_hd > 0:
@@ -111,16 +110,16 @@ if DATE_COL in df.columns and df[DATE_COL].notna().any():
 # Hàng 1: 4 KPI chính
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Doanh thu trước thuế", fmt_vnd(total_rev, short=True), delta=delta_rev)
-c2.metric("Tổng thanh toán",       fmt_vnd(total_pay, short=True))
-c3.metric("Số hợp đồng",           fmt_num(total_hd), delta=delta_hd)
-c4.metric("Affina Revenue",        fmt_vnd(total_affina, short=True))
+c2.metric("Tổng thanh toán", fmt_vnd(total_pay, short=True))
+c3.metric("Số hợp đồng", fmt_num(total_hd), delta=delta_hd)
+c4.metric("Affina Revenue", fmt_vnd(total_affina, short=True))
 
 # Hàng 2: 4 KPI phụ
 c5, c6, c7, c8 = st.columns(4)
-c5.metric("EST Bonus",             fmt_vnd(total_bonus, short=True))
-c6.metric("Phí BH (Premium)",      fmt_vnd(total_prem, short=True))
-c7.metric("Sale active",            fmt_num(n_sales))
-c8.metric("AVG DT / HĐ",            fmt_vnd(avg_per_hd, short=True))
+c5.metric("EST Bonus", fmt_vnd(total_bonus, short=True))
+c6.metric("Phí BH (Premium)", fmt_vnd(total_prem, short=True))
+c7.metric("Sale active", fmt_num(n_sales))
+c8.metric("AVG DT / HĐ", fmt_vnd(avg_per_hd, short=True))
 
 st.divider()
 
@@ -240,7 +239,7 @@ with col1:
             top_sale.insert(0, "#", range(1, len(top_sale) + 1))
             top_sale["Doanh thu"] = top_sale["revenue"].apply(lambda v: fmt_vnd(v, short=True))
             top_sale["EST_Bonus"] = top_sale["bonus"].apply(lambda v: fmt_vnd(v, short=True))
-            top_sale["Số HĐ"]     = top_sale["n_hd"].apply(fmt_num)
+            top_sale["Số HĐ"] = top_sale["n_hd"].apply(fmt_num)
             st.dataframe(
                 top_sale[["#", "Họ tên sale", "Số HĐ", "Doanh thu", "EST_Bonus"]],
                 hide_index=True, use_container_width=True,
@@ -278,9 +277,9 @@ st.divider()
 # ============================================================================
 st.markdown("### Khám phá sâu hơn")
 st.info(
-    "👈 Chọn trang khác ở sidebar bên trái để xem chi tiết:\n\n"
-    "- **Kênh & Sản phẩm** — Sunburst, Treemap, top sản phẩm\n"
-    "- **Đội ngũ Sales** — Ranking sale, BDM/BDD, Sankey, scatter\n"
-    "- **Phân tích thời gian** — YoY, MoM, heatmap tuần × thứ\n"
-    "- **Chi tiết & Filter** — Tra cứu, download CSV/Excel"
+    "Chọn trang khác ở sidebar bên trái để xem chi tiết:\n\n"
+    "- ** Kênh & Sản phẩm** — Sunburst, Treemap, top sản phẩm\n"
+    "- ** Đội ngũ Sales** — Ranking sale, BDM/BDD, Sankey, scatter\n"
+    "- ** Phân tích thời gian** — YoY, MoM, heatmap tuần × thứ\n"
+    "- ** Chi tiết & Filter** — Tra cứu, download CSV/Excel"
 )

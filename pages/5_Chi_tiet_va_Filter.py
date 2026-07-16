@@ -1,6 +1,6 @@
 """
 ================================================================================
- TRANG 5 — 🔍 CHI TIẾT & EXPORT NÂNG CAO
+ TRANG 5 — CHI TIẾT & EXPORT NÂNG CAO
 ================================================================================
 Cho phép:
   1. Filter data theo bất kỳ tiêu chí nào (sidebar + advanced filter)
@@ -24,7 +24,7 @@ from lib.data import (
     load_master_data, render_sidebar_filters,
 )
 
-st.set_page_config(page_title="Chi tiết & Export", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Chi tiết & Export", layout="wide")
 
 # ============================================================================
 # EXCEL FORMATTING
@@ -109,17 +109,17 @@ def _build_summary_df(df: pd.DataFrame) -> pd.DataFrame:
     n_hd = df["Số hợp đồng"].nunique() if "Số hợp đồng" in df else 0
     n_sale = df["Họ tên sale"].nunique() if "Họ tên sale" in df else 0
 
-    rows.append({"Chỉ số": "📅 Snapshot generated", "Giá trị": pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")})
-    rows.append({"Chỉ số": "📊 Tổng số dòng", "Giá trị": len(df)})
+    rows.append({"Chỉ số": " Snapshot generated", "Giá trị": pd.Timestamp.now().strftime("%d/%m/%Y %H:%M")})
+    rows.append({"Chỉ số": " Tổng số dòng", "Giá trị": len(df)})
     if DATE_COL in df.columns and df[DATE_COL].notna().any():
-        rows.append({"Chỉ số": "📆 Từ ngày", "Giá trị": df[DATE_COL].min().strftime("%d/%m/%Y")})
-        rows.append({"Chỉ số": "📆 Đến ngày", "Giá trị": df[DATE_COL].max().strftime("%d/%m/%Y")})
+        rows.append({"Chỉ số": " Từ ngày", "Giá trị": df[DATE_COL].min().strftime("%d/%m/%Y")})
+        rows.append({"Chỉ số": " Đến ngày", "Giá trị": df[DATE_COL].max().strftime("%d/%m/%Y")})
     rows.append({"Chỉ số": "─" * 30, "Giá trị": "─" * 30})
-    rows.append({"Chỉ số": "💰 Tổng doanh thu (trước thuế)", "Giá trị": f"{total_rev:,.0f} ₫"})
-    rows.append({"Chỉ số": "📋 Số HĐ (unique)", "Giá trị": f"{n_hd:,}"})
-    rows.append({"Chỉ số": "👥 Số Sale (unique)", "Giá trị": f"{n_sale:,}"})
+    rows.append({"Chỉ số": " Tổng doanh thu (trước thuế)", "Giá trị": f"{total_rev:,.0f} ₫"})
+    rows.append({"Chỉ số": " Số HĐ (unique)", "Giá trị": f"{n_hd:,}"})
+    rows.append({"Chỉ số": " Số Sale (unique)", "Giá trị": f"{n_sale:,}"})
     if n_hd > 0:
-        rows.append({"Chỉ số": "📊 AVG doanh thu / HĐ", "Giá trị": f"{total_rev/n_hd:,.0f} ₫"})
+        rows.append({"Chỉ số": " AVG doanh thu / HĐ", "Giá trị": f"{total_rev/n_hd:,.0f} ₫"})
 
     # Break down by Source
     if "Source" in df.columns:
@@ -128,8 +128,8 @@ def _build_summary_df(df: pd.DataFrame) -> pd.DataFrame:
         for src, grp in df.groupby("Source"):
             rev = grp["Doanh thu trước thuế"].sum() if "Doanh thu trước thuế" in grp else 0
             rows.append({
-                "Chỉ số": f"  🎨 {src}",
-                "Giá trị": f"{rev:,.0f} ₫  ({len(grp):,} dòng, {grp['Số hợp đồng'].nunique() if 'Số hợp đồng' in grp else 0:,} HĐ)"
+                "Chỉ số": f"{src}",
+                "Giá trị": f"{rev:,.0f} ₫ ({len(grp):,} dòng, {grp['Số hợp đồng'].nunique() if 'Số hợp đồng' in grp else 0:,} HĐ)"
             })
 
     # Break down by Loại BH
@@ -139,8 +139,8 @@ def _build_summary_df(df: pd.DataFrame) -> pd.DataFrame:
         for lb, grp in df.groupby("Loại bảo hiểm"):
             rev = grp["Doanh thu trước thuế"].sum() if "Doanh thu trước thuế" in grp else 0
             rows.append({
-                "Chỉ số": f"  🛡 {lb}",
-                "Giá trị": f"{rev:,.0f} ₫  ({len(grp):,} dòng)"
+                "Chỉ số": f"{lb}",
+                "Giá trị": f"{rev:,.0f} ₫ ({len(grp):,} dòng)"
             })
 
     return pd.DataFrame(rows)
@@ -160,7 +160,7 @@ def _strip_tz(df: pd.DataFrame) -> pd.DataFrame:
     for c in df.columns:
         if pd.api.types.is_datetime64_any_dtype(df[c]):
             try:
-                # Nếu có timezone → convert UTC rồi bỏ tz
+                # Nếu có timezone convert UTC rồi bỏ tz
                 if getattr(df[c].dt, "tz", None) is not None:
                     df[c] = df[c].dt.tz_localize(None)
             except (TypeError, AttributeError):
@@ -178,7 +178,7 @@ def build_excel(
     """Sinh file Excel. sheet_mode: 'single' | 'source' | 'loai_bh' | 'nha_bh'"""
     df_out = df[columns].copy()
 
-    # Convert datetime → pandas datetime cho openpyxl format đúng
+    # Convert datetime pandas datetime cho openpyxl format đúng
     for c in df_out.columns:
         if c in DATE_COLS or "Ngày" in c:
             df_out[c] = pd.to_datetime(df_out[c], errors="coerce")
@@ -191,9 +191,9 @@ def build_excel(
         # Summary sheet (đưa lên đầu)
         if include_summary:
             summary_df = _build_summary_df(df)
-            summary_df.to_excel(writer, sheet_name="📊 Summary", index=False)
+            summary_df.to_excel(writer, sheet_name="Summary", index=False)
             if HAS_OPENPYXL:
-                ws = writer.sheets["📊 Summary"]
+                ws = writer.sheets["Summary"]
                 ws.column_dimensions["A"].width = 40
                 ws.column_dimensions["B"].width = 45
                 # Style header
@@ -254,22 +254,22 @@ def build_excel(
 # COLUMN TEMPLATES
 # ============================================================================
 TEMPLATES = {
-    "🌟 Full data (tất cả cột)": None,  # None = tất cả
+    " Full data (tất cả cột)": None, # None = tất cả
 
-    "💰 Financial view": [
+    " Financial view": [
         "Ngày thanh toán", "Source", "Channel", "Số hợp đồng", "Loại bảo hiểm",
         "Sản phẩm", "Nhà BH", "Số tiền thanh toán", "Phí BH (VNĐ)",
         "Doanh thu trước thuế", "EST_Bonus", "Affina_Revenue", "Thưởng Teamlead",
     ],
 
-    "👥 Sales view": [
+    "Sales view": [
         "Ngày thanh toán", "Source", "Channel", "Số hợp đồng",
         "Họ tên sale", "Chức danh", "SĐT sale",
         "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)", "Quản lý Cấp 3 (BDH)",
         "Sản phẩm", "Nhà BH", "Doanh thu trước thuế", "EST_Bonus",
     ],
 
-    "👤 Customer view": [
+    "Customer view": [
         "Ngày thanh toán", "Số hợp đồng", "Loại bảo hiểm", "Sản phẩm",
         "Tên NĐBH", "Ngày sinh NĐBH", "Giới tính NNBH", "CCCD NĐBH",
         "Tên NMBH", "Ngày sinh NMBH", "CCCD NMBH", "Quan hệ",
@@ -277,27 +277,27 @@ TEMPLATES = {
         "Ngày bắt đầu", "Ngày kết thúc", "Số tiền thanh toán",
     ],
 
-    "📋 Compact view (10 cột)": [
+    "Compact view (10 cột)": [
         "Ngày thanh toán", "Source", "Channel", "Số hợp đồng",
         "Họ tên sale", "Loại bảo hiểm", "Sản phẩm", "Nhà BH",
         "Số tiền thanh toán", "Doanh thu trước thuế",
     ],
 
-    "🔄 Renewal view (HĐ sắp hết hạn)": [
+    "Renewal view (HĐ sắp hết hạn)": [
         "Số hợp đồng", "Loại bảo hiểm", "Sản phẩm", "Nhà BH",
         "Tên NĐBH", "SĐT NMBH", "Email NMBH",
         "Ngày bắt đầu", "Ngày kết thúc",
         "Họ tên sale", "SĐT sale", "Doanh thu trước thuế",
     ],
 
-    "⚙ Custom (tự chọn cột)": [],  # empty - user picks
+    "Custom (tự chọn cột)": [], # empty - user picks
 }
 
 
 # ============================================================================
 # MAIN
 # ============================================================================
-st.title("🔍 Chi tiết & Export nâng cao")
+st.title("Chi tiết & Export nâng cao")
 st.caption(
     "Filter data theo ý muốn — chọn template hoặc custom cột — "
     "xuất Excel có format chuyên nghiệp."
@@ -319,13 +319,13 @@ if df.empty:
 # ============================================================================
 # ADVANCED FILTER (ngoài sidebar)
 # ============================================================================
-with st.expander("🔧 Bộ lọc nâng cao (tùy chọn)", expanded=False):
+with st.expander("Bộ lọc nâng cao (tùy chọn)", expanded=False):
     col1, col2 = st.columns(2)
 
     with col1:
         # Text search
         search_text = st.text_input(
-            "🔎 Tìm theo tên khách/HĐ/sale (không phân biệt hoa thường)",
+            "Tìm theo tên khách/HĐ/sale (không phân biệt hoa thường)",
             placeholder="VD: Nguyễn, HD_000123, TRẦN THỊ...",
         )
         if search_text:
@@ -345,7 +345,7 @@ with st.expander("🔧 Bộ lọc nâng cao (tùy chọn)", expanded=False):
             max_v = float(df["Số tiền thanh toán"].max() or 1)
             if max_v > min_v:
                 amt_range = st.slider(
-                    "💰 Số tiền thanh toán (VNĐ)",
+                    "Số tiền thanh toán (VNĐ)",
                     min_value=int(min_v),
                     max_value=int(max_v),
                     value=(int(min_v), int(max_v)),
@@ -360,19 +360,19 @@ with st.expander("🔧 Bộ lọc nâng cao (tùy chọn)", expanded=False):
     with col3:
         if "QUẢN LÝ CẤP 1 (BDM)" in df.columns:
             bdm_opts = sorted(df["QUẢN LÝ CẤP 1 (BDM)"].dropna().unique())
-            bdm_sel = st.multiselect("👤 BDM (Cấp 1)", options=bdm_opts, default=[])
+            bdm_sel = st.multiselect("BDM (Cấp 1)", options=bdm_opts, default=[])
             if bdm_sel:
                 df = df[df["QUẢN LÝ CẤP 1 (BDM)"].isin(bdm_sel)]
     with col4:
         if "QUẢN LÝ CẤP 2 (BDD)" in df.columns:
             bdd_opts = sorted(df["QUẢN LÝ CẤP 2 (BDD)"].dropna().unique())
-            bdd_sel = st.multiselect("👥 BDD (Cấp 2)", options=bdd_opts, default=[])
+            bdd_sel = st.multiselect("BDD (Cấp 2)", options=bdd_opts, default=[])
             if bdd_sel:
                 df = df[df["QUẢN LÝ CẤP 2 (BDD)"].isin(bdd_sel)]
     with col5:
         if "Sản phẩm" in df.columns:
             prod_opts = sorted(df["Sản phẩm"].dropna().unique())
-            prod_sel = st.multiselect("📦 Sản phẩm", options=prod_opts, default=[])
+            prod_sel = st.multiselect("Sản phẩm", options=prod_opts, default=[])
             if prod_sel:
                 df = df[df["Sản phẩm"].isin(prod_sel)]
 
@@ -383,7 +383,7 @@ if df.empty:
 # ============================================================================
 # STATS SAU KHI FILTER
 # ============================================================================
-st.markdown("### 📊 Kết quả filter")
+st.markdown("### Kết quả filter")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("Số dòng", fmt_num(len(df)))
 c2.metric("Số HĐ", fmt_num(df["Số hợp đồng"].nunique() if "Số hợp đồng" in df else 0))
@@ -396,12 +396,12 @@ st.divider()
 # ============================================================================
 # EXPORT BUILDER
 # ============================================================================
-st.markdown("### 📥 Export Builder — Xuất file Excel")
+st.markdown("### Export Builder — Xuất file Excel")
 
 col_left, col_right = st.columns([2, 1])
 
 with col_left:
-    st.markdown("#### 1️⃣ Chọn template hoặc custom cột")
+    st.markdown("#### 1⃣ Chọn template hoặc custom cột")
     template_name = st.selectbox(
         "Template",
         options=list(TEMPLATES.keys()),
@@ -411,10 +411,10 @@ with col_left:
 
     # Determine default columns
     template_cols = TEMPLATES[template_name]
-    if template_cols is None:  # Full data
+    if template_cols is None: # Full data
         default_cols = list(df.columns)
-    elif template_cols == []:  # Custom - empty
-        default_cols = list(df.columns[:10])  # 10 cột đầu
+    elif template_cols == []: # Custom - empty
+        default_cols = list(df.columns[:10]) # 10 cột đầu
     else:
         default_cols = [c for c in template_cols if c in df.columns]
 
@@ -428,7 +428,7 @@ with col_left:
     )
 
 with col_right:
-    st.markdown("#### 2️⃣ Cấu trúc file")
+    st.markdown("#### 2⃣ Cấu trúc file")
     sheet_mode_display = st.radio(
         "Chia thành nhiều sheet?",
         options=[
@@ -440,20 +440,20 @@ with col_right:
         index=0,
     )
     sheet_mode_map = {
-        "1 sheet (tất cả data)":       "single",
+        "1 sheet (tất cả data)": "single",
         "Split by Source (Core/Neo/TSA)": "source",
         "Split by Loại BH (7 sheets)": "loai_bh",
-        "Split by Top 15 Nhà BH":       "nha_bh",
+        "Split by Top 15 Nhà BH": "nha_bh",
     }
     sheet_mode = sheet_mode_map[sheet_mode_display]
 
-    include_summary = st.checkbox("📊 Thêm sheet Summary", value=True,
+    include_summary = st.checkbox("Thêm sheet Summary", value=True,
                                    help="Sheet đầu tiên chứa KPI tổng hợp")
 
 # ============================================================================
 # PREVIEW
 # ============================================================================
-st.markdown("#### 3️⃣ Preview (20 dòng đầu)")
+st.markdown("#### 3⃣ Preview (20 dòng đầu)")
 if selected_cols:
     st.dataframe(
         df[selected_cols].head(20),
@@ -473,12 +473,12 @@ if selected_cols:
         size_str = f"~{est_size_kb/1024:.1f} MB"
 
     st.caption(
-        f"📦 File sẽ chứa **{n_rows:,} dòng × {n_cols} cột** — kích thước ước tính: **{size_str}**"
+        f"File sẽ chứa **{n_rows:,} dòng × {n_cols} cột** — kích thước ước tính: **{size_str}**"
     )
 
     if n_rows > 100_000:
         st.warning(
-            f"⚠️ Data lớn ({n_rows:,} dòng). Tạo file có thể mất 20-60 giây. "
+            f"Data lớn ({n_rows:,} dòng). Tạo file có thể mất 20-60 giây. "
             f"Cân nhắc thu hẹp khoảng thời gian filter trước."
         )
 else:
@@ -489,7 +489,7 @@ st.divider()
 # ============================================================================
 # DOWNLOAD BUTTON
 # ============================================================================
-st.markdown("#### 4️⃣ Tải xuống")
+st.markdown("#### 4⃣ Tải xuống")
 
 col_dl1, col_dl2 = st.columns([1, 2])
 
@@ -498,7 +498,7 @@ with col_dl1:
     if selected_cols:
         csv_data = df[selected_cols].to_csv(index=False).encode("utf-8-sig")
         st.download_button(
-            "📄 Tải CSV (nhanh)",
+            "Tải CSV (nhanh)",
             data=csv_data,
             file_name=f"affina_data_{datetime.now():%Y%m%d_%H%M}.csv",
             mime="text/csv",
@@ -511,7 +511,7 @@ with col_dl2:
     if selected_cols:
         if not HAS_OPENPYXL:
             st.error(
-                "❌ Thiếu `openpyxl`. Thêm vào requirements.txt và deploy lại."
+                "Thiếu `openpyxl`. Thêm vào requirements.txt và deploy lại."
             )
         else:
             # Generate Excel on-demand khi click
@@ -534,33 +534,33 @@ with col_dl2:
                         file_label=file_label,
                     )
                     st.download_button(
-                        f"📊 Tải Excel (format đẹp — {len(selected_cols)} cột)",
+                        f"Tải Excel (format đẹp — {len(selected_cols)} cột)",
                         data=excel_bytes,
                         file_name=file_label,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         use_container_width=True,
                         type="primary",
                     )
-                    st.success(f"✅ File Excel sẵn sàng! Kích thước thực: **{len(excel_bytes)/1024:.0f} KB**")
+                    st.success(f"File Excel sẵn sàng! Kích thước thực: **{len(excel_bytes)/1024:.0f} KB**")
                 except Exception as e:
-                    st.error(f"❌ Lỗi tạo Excel: {e}")
+                    st.error(f"Lỗi tạo Excel: {e}")
 
 st.divider()
 
 # ============================================================================
 # HELP
 # ============================================================================
-with st.expander("ℹ️ Hướng dẫn — Excel file có gì?"):
+with st.expander("ℹ Hướng dẫn — Excel file có gì?"):
     st.markdown("""
 **File Excel xuất ra sẽ có:**
 
-- ✅ **Header đậm** — chữ trắng trên nền xanh, dễ đọc
-- ✅ **Auto-filter** — click mũi tên header để lọc trong Excel
-- ✅ **Freeze row 1** — cuộn xuống vẫn thấy header
-- ✅ **Cột tiền tự format** — hiển thị `1,234,567 ₫`
-- ✅ **Cột ngày tự format** — hiển thị `dd/mm/yyyy`
-- ✅ **Auto-width cột** — không cần chỉnh lại
-- ✅ **Border thin** — bảng gọn gàng in ra đẹp
+- **Header đậm** — chữ trắng trên nền xanh, dễ đọc
+- **Auto-filter** — click mũi tên header để lọc trong Excel
+- **Freeze row 1** — cuộn xuống vẫn thấy header
+- **Cột tiền tự format** — hiển thị `1,234,567 ₫`
+- **Cột ngày tự format** — hiển thị `dd/mm/yyyy`
+- **Auto-width cột** — không cần chỉnh lại
+- **Border thin** — bảng gọn gàng in ra đẹp
 
 **Nếu chọn Summary sheet:**
 - Số dòng, khoảng thời gian, tổng doanh thu
@@ -576,7 +576,7 @@ with st.expander("ℹ️ Hướng dẫn — Excel file có gì?"):
 - 7 sheet: `BHSK`, `BHXM`, `BHYT`, `BHOTO`, `BHDL`, `TNDS`, `BHRR`
 
 **Tips:**
-- Dùng **Renewal view** template + filter Ngày kết thúc trong 30 ngày tới → export cho team CSKH gọi tái tục
-- Dùng **Customer view** + sheet mode Split by Nhà BH → gửi cho partner báo cáo tháng
-- Dùng **Sales view** → gửi cho BDM/BDD báo cáo team
+- Dùng **Renewal view** template + filter Ngày kết thúc trong 30 ngày tới export cho team CSKH gọi tái tục
+- Dùng **Customer view** + sheet mode Split by Nhà BH gửi cho partner báo cáo tháng
+- Dùng **Sales view** gửi cho BDM/BDD báo cáo team
     """)

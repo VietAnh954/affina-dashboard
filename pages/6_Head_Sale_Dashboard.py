@@ -1,16 +1,16 @@
 """
 ================================================================================
- TRANG 6 — 🎯 HEAD SALE DASHBOARD (An & Loan)
+ TRANG 6 — HEAD SALE DASHBOARD (An & Loan)
 ================================================================================
 Dashboard chuyên biệt cho 2 Head Sale:
-  • LD0991 — TRẦN THỊ THÙY AN     (0909310495)
+  • LD0991 — TRẦN THỊ THÙY AN (0909310495)
   • LD0894 — NGUYỄN THỊ HỒNG LOAN (0937431229)
 
 Tính năng:
   1. Selector: xem nhánh An / Loan / Cả 2 (side-by-side)
   2. Toggle so sánh: OFF / Tháng trước / Năm trước
   3. 8 KPI cards với delta
-  4. Hierarchy Sunburst: Head → BDD → BDM → Sale
+  4. Hierarchy Sunburst: Head BDD BDM Sale
   5. Top 10 sale + rank movement (bump)
   6. BDD/BDM performance với sparkline
   7. Monthly trend + prev period overlay
@@ -39,7 +39,7 @@ from lib.data import (
 # ============================================================================
 # CONFIG
 # ============================================================================
-st.set_page_config(page_title="Head Sale Dashboard", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="Head Sale Dashboard", layout="wide")
 
 # Danh sách Head Sale (thêm/bớt trong tương lai — chỉ sửa dict này)
 HEAD_SALES = {
@@ -47,13 +47,13 @@ HEAD_SALES = {
         "code": "LD0991",
         "phone": "0909310495",
         "short": "An",
-        "color": "#3B82F6",   # xanh dương
+        "color": "#3B82F6", # xanh dương
     },
     "NGUYỄN THỊ HỒNG LOAN": {
         "code": "LD0894",
         "phone": "0937431229",
         "short": "Loan",
-        "color": "#EF4444",   # đỏ
+        "color": "#EF4444", # đỏ
     },
 }
 
@@ -98,19 +98,19 @@ def calc_prev_period(df_full: pd.DataFrame, filters: dict, mode: str) -> pd.Data
     """Tính data kỳ trước theo mode 'month' hoặc 'year'.
     Return df filtered theo kỳ trước với cùng các filter khác.
     """
-    if mode == "off" or DATE_COL not in df_full.columns:
+    if mode == "off"or DATE_COL not in df_full.columns:
         return pd.DataFrame()
 
     start = pd.Timestamp(filters["start_date"])
-    end   = pd.Timestamp(filters["end_date"])
+    end = pd.Timestamp(filters["end_date"])
 
     if mode == "month":
         # cùng khoảng thời gian, dịch lùi đúng 1 tháng
         prev_start = start - pd.DateOffset(months=1)
-        prev_end   = end - pd.DateOffset(months=1)
+        prev_end = end - pd.DateOffset(months=1)
     elif mode == "year":
         prev_start = start - pd.DateOffset(years=1)
-        prev_end   = end - pd.DateOffset(years=1)
+        prev_end = end - pd.DateOffset(years=1)
     else:
         return pd.DataFrame()
 
@@ -119,10 +119,10 @@ def calc_prev_period(df_full: pd.DataFrame, filters: dict, mode: str) -> pd.Data
         (df_full[DATE_COL] <= prev_end + pd.Timedelta(days=1))
     ]
     # Áp cùng bộ lọc Source/Channel/Loại BH/Nhà BH
-    if filters.get("sources"):  df_prev = df_prev[df_prev["Source"].isin(filters["sources"])]
+    if filters.get("sources"): df_prev = df_prev[df_prev["Source"].isin(filters["sources"])]
     if filters.get("channels"): df_prev = df_prev[df_prev["Channel"].isin(filters["channels"])]
-    if filters.get("loai_bh"):  df_prev = df_prev[df_prev["Loại bảo hiểm"].isin(filters["loai_bh"])]
-    if filters.get("nha_bh"):   df_prev = df_prev[df_prev["Nhà BH"].isin(filters["nha_bh"])]
+    if filters.get("loai_bh"): df_prev = df_prev[df_prev["Loại bảo hiểm"].isin(filters["loai_bh"])]
+    if filters.get("nha_bh"): df_prev = df_prev[df_prev["Nhà BH"].isin(filters["nha_bh"])]
     return df_prev
 
 
@@ -145,21 +145,21 @@ def compute_health_index(df: pd.DataFrame, df_prev: pd.DataFrame | None) -> dict
                 else 0)
     if prev_rev > 0:
         growth = (cur_rev - prev_rev) / prev_rev
-        scores["growth"] = min(30, max(0, 15 + growth * 100))  # -15% → 0đ, 0% → 15đ, +15% → 30đ
+        scores["growth"] = min(30, max(0, 15 + growth * 100)) # -15% 0đ, 0% 15đ, +15% 30đ
     else:
-        scores["growth"] = 15  # neutral nếu không có kỳ trước
+        scores["growth"] = 15 # neutral nếu không có kỳ trước
 
     # Diversity (25 pts): số loại BH trong nhánh
     if "Loại bảo hiểm" in df.columns:
         n_types = df["Loại bảo hiểm"].nunique()
-        scores["diversity"] = min(25, n_types / 7 * 25)  # 7 loại tối đa
+        scores["diversity"] = min(25, n_types / 7 * 25) # 7 loại tối đa
     else:
         scores["diversity"] = 0
 
     # Coverage (25 pts): số sale có HĐ / tổng sale
     if "Họ tên sale" in df.columns:
         n_sales = df["Họ tên sale"].nunique()
-        # Không có tổng sale để so → tạm đánh giá bằng: sale >= 20 = 25 pts
+        # Không có tổng sale để so tạm đánh giá bằng: sale >= 20 = 25 pts
         scores["coverage"] = min(25, n_sales / 20 * 25)
     else:
         scores["coverage"] = 0
@@ -169,7 +169,7 @@ def compute_health_index(df: pd.DataFrame, df_prev: pd.DataFrame | None) -> dict
         weekly = df.groupby(df[DATE_COL].dt.to_period("W"))["Doanh thu trước thuế"].sum()
         if len(weekly) >= 2 and weekly.mean() > 0:
             cov = weekly.std() / weekly.mean()
-            scores["consistency"] = max(0, 20 - cov * 20)  # cov càng thấp càng cao điểm
+            scores["consistency"] = max(0, 20 - cov * 20) # cov càng thấp càng cao điểm
         else:
             scores["consistency"] = 10
     else:
@@ -192,9 +192,9 @@ def detect_alerts(df: pd.DataFrame, df_prev: pd.DataFrame | None) -> list[str]:
         for name in common:
             if prv[name] > 0 and (cur[name] - prv[name]) / prv[name] < -0.5:
                 alerts.append(
-                    f"📉 **Sale `{name}`**: doanh thu giảm "
+                    f"**Sale `{name}`**: doanh thu giảm "
                     f"**{((cur[name] - prv[name]) / prv[name] * 100):.0f}%** so kỳ trước "
-                    f"({fmt_vnd(prv[name], short=True)} → {fmt_vnd(cur[name], short=True)})"
+                    f"({fmt_vnd(prv[name], short=True)} {fmt_vnd(cur[name], short=True)})"
                 )
                 if len(alerts) >= 3:
                     break
@@ -207,7 +207,7 @@ def detect_alerts(df: pd.DataFrame, df_prev: pd.DataFrame | None) -> list[str]:
         inactive = last_activity[last_activity < cutoff]
         if len(inactive) > 0:
             alerts.append(
-                f"😴 **{len(inactive)} sale** không có HĐ trong 14 ngày qua "
+                f"**{len(inactive)} sale** không có HĐ trong 14 ngày qua "
                 f"(kể từ {cutoff.strftime('%d/%m/%Y')})"
             )
 
@@ -221,7 +221,7 @@ def detect_alerts(df: pd.DataFrame, df_prev: pd.DataFrame | None) -> list[str]:
         if n_expiring > 0:
             rev_at_risk = expiring["Doanh thu trước thuế"].sum() if "Doanh thu trước thuế" in expiring else 0
             alerts.append(
-                f"⏰ **{n_expiring} HĐ** sắp hết hạn trong 30 ngày tới "
+                f"**{n_expiring} HĐ** sắp hết hạn trong 30 ngày tới "
                 f"(giá trị: {fmt_vnd(rev_at_risk, short=True)}) — cần chiến dịch tái tục"
             )
 
@@ -232,7 +232,7 @@ def detect_alerts(df: pd.DataFrame, df_prev: pd.DataFrame | None) -> list[str]:
         if len(weak_bdd) > 0:
             names = ", ".join(f"`{n}`" for n in weak_bdd.index[:3])
             alerts.append(
-                f"⚠️ **{len(weak_bdd)} BDD** chỉ có <3 sale active: {names}"
+                f"**{len(weak_bdd)} BDD** chỉ có <3 sale active: {names}"
                 f"{'...' if len(weak_bdd) > 3 else ''}"
             )
 
@@ -249,7 +249,7 @@ def render_head_section(
     """Render toàn bộ chart cho 1 head sale. Được gọi 1 hoặc 2 lần tùy selector."""
 
     st.markdown(
-        f"### {head_info['short']} — {head_name}  "
+        f"### {head_info['short']} — {head_name} "
         f"<span style='color:#666;font-size:14px'>({head_info['code']} · {head_info['phone']})</span>",
         unsafe_allow_html=True,
     )
@@ -265,12 +265,12 @@ def render_head_section(
     # KPI CARDS
     # -----------------------------------------------------------------------
     cur = {
-        "rev":     df_head["Doanh thu trước thuế"].sum() if "Doanh thu trước thuế" in df_head else 0,
-        "hd":      df_head["Số hợp đồng"].nunique()       if "Số hợp đồng"         in df_head else 0,
-        "sale":    df_head["Họ tên sale"].nunique()       if "Họ tên sale"         in df_head else 0,
-        "affina":  df_head["Affina_Revenue"].sum()        if "Affina_Revenue"      in df_head else 0,
-        "bonus":   df_head["EST_Bonus"].sum()             if "EST_Bonus"           in df_head else 0,
-        "prem":    df_head["Phí BH (VNĐ)"].sum()          if "Phí BH (VNĐ)"        in df_head else 0,
+        "rev": df_head["Doanh thu trước thuế"].sum() if "Doanh thu trước thuế" in df_head else 0,
+        "hd": df_head["Số hợp đồng"].nunique() if "Số hợp đồng" in df_head else 0,
+        "sale": df_head["Họ tên sale"].nunique() if "Họ tên sale" in df_head else 0,
+        "affina": df_head["Affina_Revenue"].sum() if "Affina_Revenue" in df_head else 0,
+        "bonus": df_head["EST_Bonus"].sum() if "EST_Bonus" in df_head else 0,
+        "prem": df_head["Phí BH (VNĐ)"].sum() if "Phí BH (VNĐ)" in df_head else 0,
     }
     cur["avg_hd"] = cur["rev"] / cur["hd"] if cur["hd"] > 0 else 0
 
@@ -285,30 +285,30 @@ def render_head_section(
     prev = {}
     if df_head_prev is not None and not df_head_prev.empty:
         prev = {
-            "rev":    df_head_prev["Doanh thu trước thuế"].sum() if "Doanh thu trước thuế" in df_head_prev else 0,
-            "hd":     df_head_prev["Số hợp đồng"].nunique()       if "Số hợp đồng"         in df_head_prev else 0,
-            "sale":   df_head_prev["Họ tên sale"].nunique()       if "Họ tên sale"         in df_head_prev else 0,
-            "affina": df_head_prev["Affina_Revenue"].sum()        if "Affina_Revenue"      in df_head_prev else 0,
-            "bonus":  df_head_prev["EST_Bonus"].sum()             if "EST_Bonus"           in df_head_prev else 0,
+            "rev": df_head_prev["Doanh thu trước thuế"].sum() if "Doanh thu trước thuế" in df_head_prev else 0,
+            "hd": df_head_prev["Số hợp đồng"].nunique() if "Số hợp đồng" in df_head_prev else 0,
+            "sale": df_head_prev["Họ tên sale"].nunique() if "Họ tên sale" in df_head_prev else 0,
+            "affina": df_head_prev["Affina_Revenue"].sum() if "Affina_Revenue" in df_head_prev else 0,
+            "bonus": df_head_prev["EST_Bonus"].sum() if "EST_Bonus" in df_head_prev else 0,
         }
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("💰 Doanh thu nhánh",  fmt_vnd(cur["rev"], short=True),
+    c1.metric("Doanh thu nhánh", fmt_vnd(cur["rev"], short=True),
               delta=compute_delta(cur["rev"], prev.get("rev")),
               help=f"So với {comparison_label}" if prev else None)
-    c2.metric("📋 Số HĐ",              fmt_num(cur["hd"]),
+    c2.metric("Số HĐ", fmt_num(cur["hd"]),
               delta=compute_delta(cur["hd"], prev.get("hd")))
-    c3.metric("👥 Sale trong nhánh",   fmt_num(cur["sale"]),
+    c3.metric("Sale trong nhánh", fmt_num(cur["sale"]),
               delta=compute_delta(cur["sale"], prev.get("sale")))
-    c4.metric("🏢 Affina Revenue",     fmt_vnd(cur["affina"], short=True),
+    c4.metric("Affina Revenue", fmt_vnd(cur["affina"], short=True),
               delta=compute_delta(cur["affina"], prev.get("affina")))
 
     c5, c6, c7, c8 = st.columns(4)
-    c5.metric("🎯 EST Bonus",         fmt_vnd(cur["bonus"], short=True),
+    c5.metric("EST Bonus", fmt_vnd(cur["bonus"], short=True),
               delta=compute_delta(cur["bonus"], prev.get("bonus")))
-    c6.metric("💎 Phí BH",             fmt_vnd(cur["prem"], short=True))
-    c7.metric("📊 AVG DT/HĐ",          fmt_vnd(cur["avg_hd"], short=True))
-    c8.metric("⚡ Sale active 14d",    fmt_num(active_recent),
+    c6.metric("Phí BH", fmt_vnd(cur["prem"], short=True))
+    c7.metric("AVG DT/HĐ", fmt_vnd(cur["avg_hd"], short=True))
+    c8.metric("Sale active 14d", fmt_num(active_recent),
               help="Số sale có ít nhất 1 HĐ trong 14 ngày gần nhất")
 
     st.markdown("")
@@ -319,7 +319,7 @@ def render_head_section(
     col_health, col_alerts = st.columns([1, 2])
 
     with col_health:
-        st.markdown("**🏥 Team Health Index**")
+        st.markdown("** Team Health Index**")
         health = compute_health_index(df_head, df_head_prev)
         gauge = go.Figure(go.Indicator(
             mode="gauge+number",
@@ -348,13 +348,13 @@ def render_head_section(
         )
 
     with col_alerts:
-        st.markdown("**🚨 Alerts & Insights**")
+        st.markdown("** Alerts & Insights**")
         alerts = detect_alerts(df_head, df_head_prev)
         if alerts:
             for a in alerts[:5]:
                 st.warning(a)
         else:
-            st.success("✅ Không có cảnh báo bất thường trong kỳ này.")
+            st.success("Không có cảnh báo bất thường trong kỳ này.")
 
     st.divider()
 
@@ -364,8 +364,8 @@ def render_head_section(
     col_hier, col_mix = st.columns([3, 2])
 
     with col_hier:
-        st.markdown("**🌳 Cấu trúc nhánh — Doanh thu theo cấp**")
-        # Sunburst: Head → BDD → BDM → Sale
+        st.markdown("** Cấu trúc nhánh — Doanh thu theo cấp**")
+        # Sunburst: Head BDD BDM Sale
         hier_cols = []
         for c in ["QUẢN LÝ CẤP 2 (BDD)", "QUẢN LÝ CẤP 1 (BDM)", "Họ tên sale"]:
             if c in df_head.columns:
@@ -394,7 +394,7 @@ def render_head_section(
             empty_state("Thiếu cột BDD/BDM/Sale để vẽ hierarchy.")
 
     with col_mix:
-        st.markdown("**🛡 Cơ cấu Loại bảo hiểm**")
+        st.markdown("** Cơ cấu Loại bảo hiểm**")
         if "Loại bảo hiểm" in df_head.columns:
             mix = df_head.groupby("Loại bảo hiểm", as_index=False)["Doanh thu trước thuế"].sum()
             mix = mix[mix["Doanh thu trước thuế"] > 0]
@@ -417,7 +417,7 @@ def render_head_section(
     # -----------------------------------------------------------------------
     # TREND THEO THÁNG + OVERLAY KỲ TRƯỚC
     # -----------------------------------------------------------------------
-    st.markdown("**📈 Doanh thu theo tháng** (kỳ hiện tại vs kỳ trước)")
+    st.markdown("** Doanh thu theo tháng** (kỳ hiện tại vs kỳ trước)")
     if DATE_COL in df_head.columns and df_head[DATE_COL].notna().any():
         df_m = df_head.copy()
         df_m["month"] = df_m[DATE_COL].dt.to_period("M").dt.to_timestamp()
@@ -452,7 +452,7 @@ def render_head_section(
     # -----------------------------------------------------------------------
     # TOP 10 SALE + RANK MOVEMENT
     # -----------------------------------------------------------------------
-    st.markdown("**🏆 Top 10 Sale doanh thu cao nhất**")
+    st.markdown("** Top 10 Sale doanh thu cao nhất**")
     if "Họ tên sale" in df_head.columns:
         cur_ranked = (df_head.groupby("Họ tên sale", as_index=False)
                              .agg(revenue=("Doanh thu trước thuế", "sum"),
@@ -480,17 +480,17 @@ def render_head_section(
         # Build display columns
         def _rank_movement(row):
             if pd.isna(row["rank_prev"]):
-                return "🆕"
+                return "Mới"
             diff = int(row["rank_prev"]) - int(row["rank_now"])
-            if diff > 0:  return f"🔺 +{diff}"
-            if diff < 0:  return f"🔻 {diff}"
-            return "➖ 0"
+            if diff > 0: return f"▲ +{diff}"
+            if diff < 0: return f"▼ {diff}"
+            return "= 0"
 
-        cur_ranked["Thứ hạng"]      = cur_ranked["rank_now"].astype(int)
-        cur_ranked["Chuyển động"]   = cur_ranked.apply(_rank_movement, axis=1)
-        cur_ranked["Doanh thu"]     = cur_ranked["revenue"].apply(lambda v: fmt_vnd(v, short=True))
-        cur_ranked["Số HĐ"]         = cur_ranked["n_hd"].apply(fmt_num)
-        cur_ranked["EST_Bonus"]     = cur_ranked["bonus"].apply(lambda v: fmt_vnd(v, short=True))
+        cur_ranked["Thứ hạng"] = cur_ranked["rank_now"].astype(int)
+        cur_ranked["Chuyển động"] = cur_ranked.apply(_rank_movement, axis=1)
+        cur_ranked["Doanh thu"] = cur_ranked["revenue"].apply(lambda v: fmt_vnd(v, short=True))
+        cur_ranked["Số HĐ"] = cur_ranked["n_hd"].apply(fmt_num)
+        cur_ranked["EST_Bonus"] = cur_ranked["bonus"].apply(lambda v: fmt_vnd(v, short=True))
 
         display_cols = ["Thứ hạng", "Họ tên sale", "Chuyển động", "Số HĐ", "Doanh thu", "EST_Bonus"]
         st.dataframe(
@@ -498,7 +498,7 @@ def render_head_section(
             hide_index=True, use_container_width=True,
         )
         st.caption(
-            "🔺 = tăng hạng · 🔻 = giảm hạng · ➖ = giữ nguyên · 🆕 = mới vào top 10"
+            "▲ = tăng hạng · ▼ = giảm hạng · (=) giữ nguyên · Mới = mới vào top 10"
             f"{' (so với ' + comparison_label + ')' if not cur_ranked['rank_prev'].isna().all() else ''}"
         )
     st.markdown("")
@@ -506,7 +506,7 @@ def render_head_section(
     # -----------------------------------------------------------------------
     # BDD PERFORMANCE
     # -----------------------------------------------------------------------
-    st.markdown("**👔 Hiệu suất BDD trong nhánh**")
+    st.markdown("** Hiệu suất BDD trong nhánh**")
     if "QUẢN LÝ CẤP 2 (BDD)" in df_head.columns:
         bdd_perf = (df_head.groupby("QUẢN LÝ CẤP 2 (BDD)", as_index=False)
                             .agg(revenue=("Doanh thu trước thuế", "sum"),
@@ -536,20 +536,20 @@ def render_head_section(
     # -----------------------------------------------------------------------
     # CONTRACT RENEWAL RADAR (HĐ sắp hết hạn)
     # -----------------------------------------------------------------------
-    st.markdown("**🔄 Contract Renewal Radar** — HĐ sắp hết hạn (mỏ vàng doanh thu tái tục)")
+    st.markdown("** Contract Renewal Radar** — HĐ sắp hết hạn (mỏ vàng doanh thu tái tục)")
     if "Ngày kết thúc" in df_head.columns and df_head["Ngày kết thúc"].notna().any():
         today = pd.Timestamp.now().normalize()
         buckets = [
-            ("Trong 7 ngày",   1,   7,   "#DC2626"),
-            ("8-15 ngày",      8,   15,  "#F59E0B"),
-            ("16-30 ngày",     16,  30,  "#EAB308"),
-            ("31-60 ngày",     31,  60,  "#10B981"),
-            ("61-90 ngày",     61,  90,  "#3B82F6"),
+            ("Trong 7 ngày", 1, 7, "#DC2626"),
+            ("8-15 ngày", 8, 15, "#F59E0B"),
+            ("16-30 ngày", 16, 30, "#EAB308"),
+            ("31-60 ngày", 31, 60, "#10B981"),
+            ("61-90 ngày", 61, 90, "#3B82F6"),
         ]
         rows = []
         for label, d1, d2, color in buckets:
             start = today + pd.Timedelta(days=d1)
-            end   = today + pd.Timedelta(days=d2)
+            end = today + pd.Timedelta(days=d2)
             mask = (df_head["Ngày kết thúc"] >= start) & (df_head["Ngày kết thúc"] <= end)
             df_bucket = df_head[mask]
             rows.append({
@@ -596,10 +596,10 @@ def render_head_section(
             st.plotly_chart(apply_plotly_layout(fig2, title="Giá trị HĐ theo bucket", height=320),
                             use_container_width=True)
 
-        total_renew_hd  = df_renew["Số HĐ"].sum()
+        total_renew_hd = df_renew["Số HĐ"].sum()
         total_renew_val = df_renew["Giá trị (VNĐ)"].sum()
         st.info(
-            f"💰 **Tổng cơ hội tái tục 90 ngày tới**: **{total_renew_hd:,} HĐ** — "
+            f"**Tổng cơ hội tái tục 90 ngày tới**: **{total_renew_hd:,} HĐ** — "
             f"giá trị **{fmt_vnd(total_renew_val, short=True)}**. "
             f"Nên khởi động chiến dịch remind trước 30 ngày."
         )
@@ -611,7 +611,7 @@ def render_head_section(
     # -----------------------------------------------------------------------
     # DETAIL TABLE + DOWNLOAD
     # -----------------------------------------------------------------------
-    with st.expander(f"🔍 Xem bảng chi tiết & tải CSV cho nhánh {head_info['short']}"):
+    with st.expander(f"Xem bảng chi tiết & tải CSV cho nhánh {head_info['short']}"):
         show_cols = [c for c in [
             "Ngày thanh toán", "Số hợp đồng", "Họ tên sale",
             "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)",
@@ -624,7 +624,7 @@ def render_head_section(
         )
         csv = df_head[show_cols].to_csv(index=False).encode("utf-8-sig")
         st.download_button(
-            f"📥 Tải CSV — nhánh {head_info['short']} ({len(df_head):,} dòng)",
+            f"Tải CSV — nhánh {head_info['short']} ({len(df_head):,} dòng)",
             data=csv,
             file_name=f"nhanh_{head_info['short']}_{pd.Timestamp.now():%Y%m%d}.csv",
             mime="text/csv",
@@ -635,7 +635,7 @@ def render_head_section(
 # ============================================================================
 # MAIN
 # ============================================================================
-st.title("🎯 Head Sale Dashboard — An & Loan")
+st.title("Head Sale Dashboard — An & Loan")
 st.caption(
     "Dashboard chuyên biệt cho 2 Head Sale, "
     "phân tích hiệu suất nhánh + phát hiện anomaly + cơ hội tái tục."
@@ -651,12 +651,12 @@ if df_all.empty:
 head_col = find_head_column(df_all)
 if head_col is None:
     st.error(
-        "❌ **Không tìm thấy tên Head Sale** trong các cột "
+        "**Không tìm thấy tên Head Sale** trong các cột "
         f"{HEAD_COL_CANDIDATES} của bảng `dashboard_master_data`.\n\n"
         "**Có thể do:**\n"
         "1. Nhánh An/Loan chưa đủ dữ liệu trong khoảng 2024-2026\n"
         "2. Tên trong DSNS có dấu/spacing khác với config trong file này\n\n"
-        "**Cách kiểm tra:** vào Supabase Studio → SQL Editor → chạy:\n"
+        "**Cách kiểm tra:** vào Supabase Studio SQL Editor chạy:\n"
         "```sql\n"
         "SELECT DISTINCT \"Quản lý Cấp 3 (BDH)\" FROM dashboard_master_data\n"
         "WHERE \"Quản lý Cấp 3 (BDH)\" IS NOT NULL LIMIT 20;\n"
@@ -664,7 +664,7 @@ if head_col is None:
     )
     st.stop()
 
-st.caption(f"🔎 Cột chứa Head Sale được detect: **`{head_col}`**")
+st.caption(f"Cột chứa Head Sale được detect: **`{head_col}`**")
 
 # Common filters (từ lib/data.py — nhớ import session_state để không reset)
 filters = render_sidebar_filters(df_all)
@@ -674,50 +674,50 @@ df_filtered = apply_filters(df_all, filters)
 # HEAD SELECTOR + COMPARISON MODE (sidebar)
 # ============================================================================
 st.sidebar.divider()
-st.sidebar.markdown("### 🎯 Head Sale View")
+st.sidebar.markdown("### Head Sale View")
 
 view_mode = st.sidebar.radio(
     "Xem nhánh:",
     options=["Cả 2 (side-by-side)", "TRẦN THỊ THÙY AN", "NGUYỄN THỊ HỒNG LOAN"],
     format_func=lambda x: {
-        "Cả 2 (side-by-side)": "👥 Cả 2",
-        "TRẦN THỊ THÙY AN": "🔵 An (LD0991)",
-        "NGUYỄN THỊ HỒNG LOAN": "🔴 Loan (LD0894)",
+        "Cả 2 (side-by-side)": " Cả 2",
+        "TRẦN THỊ THÙY AN": " An (LD0991)",
+        "NGUYỄN THỊ HỒNG LOAN": " Loan (LD0894)",
     }.get(x, x),
     key="head_view_mode",
 )
 
 comp_mode = st.sidebar.radio(
-    "📊 So sánh với:",
+    "So sánh với:",
     options=["off", "month", "year"],
     format_func=lambda x: {
-        "off":   "Tắt so sánh",
-        "month": "🗓 Kỳ trước (tháng)",
-        "year":  "📅 Cùng kỳ năm trước",
+        "off": "Tắt so sánh",
+        "month": " Kỳ trước (tháng)",
+        "year": " Cùng kỳ năm trước",
     }[x],
     key="head_comp_mode",
 )
 
 comparison_label = {
-    "off":   "",
+    "off": "",
     "month": "Kỳ trước",
-    "year":  "Cùng kỳ năm trước",
+    "year": "Cùng kỳ năm trước",
 }[comp_mode]
 
 # Compute prev period df (once, reuse for both heads)
-df_prev_all = calc_prev_period(df_all, filters, comp_mode) if comp_mode != "off" else pd.DataFrame()
+df_prev_all = calc_prev_period(df_all, filters, comp_mode) if comp_mode != "off"else pd.DataFrame()
 
 # ============================================================================
 # RENDER
 # ============================================================================
 if view_mode == "Cả 2 (side-by-side)":
     st.info(
-        "👥 Chế độ so sánh 2 nhánh song song. Cuộn xuống để xem chi tiết từng head. "
-        "Muốn xem sâu 1 nhánh → chọn ở sidebar bên trái."
+        "Chế độ so sánh 2 nhánh song song. Cuộn xuống để xem chi tiết từng head. "
+        "Muốn xem sâu 1 nhánh chọn ở sidebar bên trái."
     )
 
     # Bảng tổng An vs Loan
-    st.markdown("### ⚖️ So sánh nhanh An vs Loan")
+    st.markdown("### So sánh nhanh An vs Loan")
     summary_rows = []
     for head_name, head_info in HEAD_SALES.items():
         df_head = filter_by_head(df_filtered, head_col, head_name)
@@ -730,9 +730,9 @@ if view_mode == "Cả 2 (side-by-side)":
         })
     df_sum = pd.DataFrame(summary_rows)
     df_sum_disp = df_sum.copy()
-    df_sum_disp["Doanh thu"]  = df_sum_disp["Doanh thu"].apply(lambda v: fmt_vnd(v, short=True))
-    df_sum_disp["Số HĐ"]      = df_sum_disp["Số HĐ"].apply(fmt_num)
-    df_sum_disp["Số Sale"]    = df_sum_disp["Số Sale"].apply(fmt_num)
+    df_sum_disp["Doanh thu"] = df_sum_disp["Doanh thu"].apply(lambda v: fmt_vnd(v, short=True))
+    df_sum_disp["Số HĐ"] = df_sum_disp["Số HĐ"].apply(fmt_num)
+    df_sum_disp["Số Sale"] = df_sum_disp["Số Sale"].apply(fmt_num)
     df_sum_disp["Affina Rev"] = df_sum_disp["Affina Rev"].apply(lambda v: fmt_vnd(v, short=True))
     st.dataframe(df_sum_disp, hide_index=True, use_container_width=True)
 
@@ -742,8 +742,8 @@ if view_mode == "Cả 2 (side-by-side)":
         df_sum_melt, x="Chỉ số", y="Giá trị", color="Head",
         barmode="group",
         color_discrete_map={
-            f"An ({HEAD_SALES['TRẦN THỊ THÙY AN']['code']})":         HEAD_SALES["TRẦN THỊ THÙY AN"]["color"],
-            f"Loan ({HEAD_SALES['NGUYỄN THỊ HỒNG LOAN']['code']})":   HEAD_SALES["NGUYỄN THỊ HỒNG LOAN"]["color"],
+            f"An ({HEAD_SALES['TRẦN THỊ THÙY AN']['code']})": HEAD_SALES["TRẦN THỊ THÙY AN"]["color"],
+            f"Loan ({HEAD_SALES['NGUYỄN THỊ HỒNG LOAN']['code']})": HEAD_SALES["NGUYỄN THỊ HỒNG LOAN"]["color"],
         },
     )
     fig_sum.update_yaxes(tickformat=",.0f")
@@ -769,7 +769,7 @@ else:
 
 st.divider()
 st.caption(
-    "💡 **Tip cho Head:** dùng khoảng thời gian ở sidebar để zoom vào 1 tháng, "
+    "**Tip cho Head:** dùng khoảng thời gian ở sidebar để zoom vào 1 tháng, "
     "bật 'So sánh với Cùng kỳ năm trước' để đánh giá growth thật, "
     "và check phần **Renewal Radar** hàng tuần để không bỏ lỡ cơ hội tái tục."
 )

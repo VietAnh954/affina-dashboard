@@ -1,6 +1,6 @@
 """
 ================================================================================
- TRANG 8 — 👤 CUSTOMER ANALYTICS
+ TRANG 8 — CUSTOMER ANALYTICS
 ================================================================================
 Trả lời:
   1. Khách hàng của Affina là AI? (demographics)
@@ -32,7 +32,7 @@ from lib.data import (
     load_master_data, render_sidebar_filters,
 )
 
-st.set_page_config(page_title="Customer Analytics", page_icon="👤", layout="wide")
+st.set_page_config(page_title="Customer Analytics", layout="wide")
 
 
 # ============================================================================
@@ -91,21 +91,21 @@ def _rfm_segment(row) -> str:
     r, f, m = row["R"], row["F"], row["M"]
     fm = (f + m) / 2
 
-    if r >= 4 and fm >= 4:  return "Champions 🏆"
-    if r >= 3 and fm >= 3:  return "Loyal Customers 💎"
-    if r >= 4 and fm <= 2:  return "New Customers 🆕"
-    if r >= 3 and fm <= 2:  return "Potential Loyalists 🌱"
-    if r <= 2 and fm >= 4:  return "At Risk (VIP) ⚠️"
-    if r <= 2 and fm >= 3:  return "About to Sleep 😴"
-    if r <= 2 and fm <= 2:  return "Lost 💔"
-    if r == 3 and fm == 3:  return "Need Attention 👀"
+    if r >= 4 and fm >= 4: return "Champions"
+    if r >= 3 and fm >= 3: return "Loyal Customers"
+    if r >= 4 and fm <= 2: return "New Customers"
+    if r >= 3 and fm <= 2: return "Potential Loyalists"
+    if r <= 2 and fm >= 4: return "At Risk (VIP)"
+    if r <= 2 and fm >= 3: return "About to Sleep"
+    if r <= 2 and fm <= 2: return "Lost"
+    if r == 3 and fm == 3: return "Need Attention"
     return "Others"
 
 
 # ============================================================================
 # MAIN
 # ============================================================================
-st.title("👤 Customer Analytics — Chân dung khách hàng Affina")
+st.title("Customer Analytics — Chân dung khách hàng Affina")
 st.caption(
     "Phân tích: khách hàng là ai, ai là VIP, ai đang rời bỏ, "
     "khách mua sản phẩm gì cùng nhau."
@@ -133,37 +133,37 @@ n_records = len(df_valid)
 # ==========================================================================
 # 1. QUY MÔ KHÁCH HÀNG
 # ==========================================================================
-st.markdown("### 📊 Quy mô khách hàng")
+st.markdown("### Quy mô khách hàng")
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("👥 Khách hàng duy nhất", fmt_num(n_unique_cust))
-c2.metric("📋 Số HĐ", fmt_num(df["Số hợp đồng"].nunique() if "Số hợp đồng" in df else 0))
+c1.metric("Khách hàng duy nhất", fmt_num(n_unique_cust))
+c2.metric("Số HĐ", fmt_num(df["Số hợp đồng"].nunique() if "Số hợp đồng" in df else 0))
 avg_hd_per_cust = n_records / n_unique_cust if n_unique_cust > 0 else 0
-c3.metric("🔁 AVG HĐ/khách", f"{avg_hd_per_cust:.2f}",
+c3.metric("AVG HĐ/khách", f"{avg_hd_per_cust:.2f}",
            help="Cao > 1 = có tái mua/cross-sell tốt")
 avg_rev_per_cust = df_valid["Doanh thu trước thuế"].sum() / n_unique_cust if n_unique_cust > 0 else 0
-c4.metric("💰 AVG doanh thu/khách", fmt_vnd(avg_rev_per_cust, short=True))
+c4.metric("AVG doanh thu/khách", fmt_vnd(avg_rev_per_cust, short=True))
 
 # % identified
 coverage = n_unique_cust / max(len(df), 1) * 100
 if coverage < 60:
     st.warning(
-        f"⚠️ Chỉ **{coverage:.0f}%** HĐ có thông tin định danh khách hàng (CCCD/SĐT/Tên). "
+        f"Chỉ **{coverage:.0f}%** HĐ có thông tin định danh khách hàng (CCCD/SĐT/Tên). "
         f"Nên bổ sung CCCD/SĐT khi cấp đơn để tăng độ chính xác phân tích."
     )
 else:
-    st.success(f"✅ **{coverage:.0f}%** HĐ có thông tin định danh — data đủ tin cậy.")
+    st.success(f"**{coverage:.0f}%** HĐ có thông tin định danh — data đủ tin cậy.")
 
 st.divider()
 
 # ==========================================================================
 # 2. DEMOGRAPHICS
 # ==========================================================================
-st.markdown("### 🎂 Demographics — Chân dung khách hàng")
+st.markdown("### Demographics — Chân dung khách hàng")
 
 col_age, col_gender = st.columns([3, 2])
 
 with col_age:
-    st.markdown("**📈 Phân phối theo độ tuổi**")
+    st.markdown("** Phân phối theo độ tuổi**")
     if "Ngày sinh NĐBH" in df_valid.columns:
         age = _compute_age(df_valid["Ngày sinh NĐBH"])
         age_df = pd.DataFrame({"age": age.dropna()})
@@ -196,7 +196,7 @@ with col_age:
             top_pct = age_dist.max() / age_dist.sum() * 100
             avg_age = age.mean()
             st.caption(
-                f"💡 Nhóm khách chính: **{top_group}** ({top_pct:.1f}%). "
+                f"Nhóm khách chính: **{top_group}** ({top_pct:.1f}%). "
                 f"Độ tuổi TB: **{avg_age:.1f}** tuổi."
             )
         else:
@@ -205,7 +205,7 @@ with col_age:
         empty_state("Không có cột 'Ngày sinh NĐBH'.")
 
 with col_gender:
-    st.markdown("**👫 Giới tính**")
+    st.markdown("** Giới tính**")
     if "Giới tính NNBH" in df_valid.columns:
         gender = df_valid.groupby("_customer_id")["Giới tính NNBH"].first().value_counts()
         if not gender.empty:
@@ -219,7 +219,7 @@ with col_gender:
             st.plotly_chart(apply_plotly_layout(fig, title="", height=350),
                             use_container_width=True)
 
-st.markdown("**🏠 Quan hệ với NMBH (Người mua BH)**")
+st.markdown("** Quan hệ với NMBH (Người mua BH)**")
 if "Quan hệ" in df_valid.columns:
     rel = df_valid.groupby("Quan hệ", as_index=False).agg(
         n_customer=("_customer_id", "nunique"),
@@ -244,10 +244,10 @@ st.divider()
 # ==========================================================================
 # 3. RFM SEGMENTATION
 # ==========================================================================
-st.markdown("### 💎 RFM Segmentation — Ai là khách VIP?")
+st.markdown("### RFM Segmentation — Ai là khách VIP?")
 st.caption(
     "**R**ecency (mua gần đây không?) · **F**requency (mua nhiều lần?) · "
-    "**M**onetary (chi tiêu nhiều?). Phân loại 5×5 → 8 segments."
+    "**M**onetary (chi tiêu nhiều?). Phân loại 5×5 8 segments."
 )
 
 if DATE_COL in df_valid.columns and "Doanh thu trước thuế" in df_valid.columns:
@@ -303,7 +303,7 @@ if DATE_COL in df_valid.columns and "Doanh thu trước thuế" in df_valid.colu
             st.dataframe(tbl, use_container_width=True)
 
         # RFM Heatmap 5x5 (R × F)
-        st.markdown("**🔥 Heatmap R × F — Distribution & Revenue**")
+        st.markdown("** Heatmap R × F — Distribution & Revenue**")
         col_a, col_b = st.columns(2)
 
         with col_a:
@@ -330,18 +330,18 @@ if DATE_COL in df_valid.columns and "Doanh thu trước thuế" in df_valid.colu
 
         # Insights
         champions = seg_summary[seg_summary.index.str.contains("Champions", na=False)]
-        at_risk   = seg_summary[seg_summary.index.str.contains("At Risk", na=False)]
+        at_risk = seg_summary[seg_summary.index.str.contains("At Risk", na=False)]
         if not champions.empty:
             st.success(
-                f"🏆 **Champions** ({champions['n_customer'].values[0]:,} khách — "
+                f"**Champions** ({champions['n_customer'].values[0]:,} khách — "
                 f"{champions['% khách'].values[0]:.1f}%) đang tạo ra "
                 f"**{champions['% doanh thu'].values[0]:.1f}%** doanh thu. "
-                f"→ Chương trình VIP care để giữ nhóm này."
+                f"Chương trình VIP care để giữ nhóm này."
             )
         if not at_risk.empty:
             st.warning(
-                f"⚠️ **At Risk** ({at_risk['n_customer'].values[0]:,} khách VIP đang cách xa mua). "
-                f"→ Chiến dịch win-back gấp để cứu **{fmt_vnd(at_risk['total_revenue'].values[0], short=True)}** doanh thu."
+                f"**At Risk** ({at_risk['n_customer'].values[0]:,} khách VIP đang cách xa mua). "
+                f"Chiến dịch win-back gấp để cứu **{fmt_vnd(at_risk['total_revenue'].values[0], short=True)}** doanh thu."
             )
     else:
         st.info("Cần ít nhất 20 khách hàng để RFM có ý nghĩa. Nới thời gian filter.")
@@ -351,7 +351,7 @@ st.divider()
 # ==========================================================================
 # 4. COHORT RETENTION
 # ==========================================================================
-st.markdown("### 🔁 Cohort Retention — Khách có quay lại mua không?")
+st.markdown("### Cohort Retention — Khách có quay lại mua không?")
 st.caption(
     "Mỗi hàng = nhóm khách join tháng đó. Mỗi cột = % khách còn quay lại mua sau N tháng. "
     "Diagonal đỏ = mất khách nhanh. Cột cao dần bên phải = giữ chân tốt."
@@ -406,10 +406,10 @@ if DATE_COL in df_valid.columns:
             avg_m1_retention = retention.iloc[:, 1].dropna().mean()
             if pd.notna(avg_m1_retention):
                 if avg_m1_retention > 20:
-                    st.success(f"✅ Retention tháng 1: **{avg_m1_retention:.1f}%** — tốt cho ngành BH.")
+                    st.success(f"Retention tháng 1: **{avg_m1_retention:.1f}%** — tốt cho ngành BH.")
                 else:
                     st.warning(
-                        f"📉 Retention tháng 1 chỉ **{avg_m1_retention:.1f}%**. "
+                        f"Retention tháng 1 chỉ **{avg_m1_retention:.1f}%**. "
                         f"Đa số khách chỉ mua 1 lần — cần chiến lược cross-sell/tái tục."
                     )
 
@@ -418,7 +418,7 @@ st.divider()
 # ==========================================================================
 # 5. CROSS-SELL MATRIX
 # ==========================================================================
-st.markdown("### 🔀 Cross-sell Matrix — Khách mua A thường mua thêm gì?")
+st.markdown("### Cross-sell Matrix — Khách mua A thường mua thêm gì?")
 st.caption(
     "Ma trận đo affinity giữa các Loại BH. Ô đậm màu = khách mua Loại BH ở hàng "
     "thường mua thêm Loại BH ở cột."
@@ -464,9 +464,9 @@ if "Loại bảo hiểm" in df_valid.columns and n_unique_cust > 0:
                     pairs.append((i, j, matrix_pct.loc[i, j], matrix.loc[i, j]))
         top_pairs = sorted(pairs, key=lambda x: -x[2])[:5]
         if top_pairs:
-            st.markdown("**🎯 Top 5 cặp cross-sell mạnh nhất:**")
+            st.markdown("** Top 5 cặp cross-sell mạnh nhất:**")
             for p in top_pairs:
-                st.markdown(f"- Khách mua **{p[0]}** → **{p[2]:.1f}%** mua thêm **{p[1]}** ({int(p[3])} khách)")
+                st.markdown(f"- Khách mua **{p[0]}** **{p[2]:.1f}%** mua thêm **{p[1]}** ({int(p[3])} khách)")
     else:
         st.info("Chưa đủ dữ liệu cross-sell — cần khách mua ít nhất 2 loại BH.")
 
@@ -475,7 +475,7 @@ st.divider()
 # ==========================================================================
 # 6. BHSK ADD-ON ATTACHMENT
 # ==========================================================================
-st.markdown("### 🩺 BHSK Add-on Attachment Rate")
+st.markdown("### BHSK Add-on Attachment Rate")
 st.caption(
     "Trong các HĐ BHSK, bao nhiêu % có thêm add-on (Ngoại trú, Nha khoa, Thai sản, Topup)? "
     "Cross-sell là nguồn revenue phụ quan trọng."
@@ -531,7 +531,7 @@ if not df_bhsk.empty:
         avg_addons = n_addons_per_contract.mean()
         no_addon_pct = (n_addons_per_contract == 0).sum() / n_bhsk * 100
         st.caption(
-            f"💡 **Insight**: TB **{avg_addons:.2f}** add-on/HĐ BHSK. "
+            f"**Insight**: TB **{avg_addons:.2f}** add-on/HĐ BHSK. "
             f"**{no_addon_pct:.1f}%** HĐ BHSK không có add-on nào — "
             f"cơ hội cross-sell rất lớn."
         )
@@ -540,7 +540,7 @@ else:
 
 st.divider()
 st.caption(
-    "🧠 Trang này áp dụng: **RFM Segmentation** (5×5 grid), **Cohort Retention Analysis**, "
+    "Trang này áp dụng: **RFM Segmentation** (5×5 grid), **Cohort Retention Analysis**, "
     "**Cross-sell/Market Basket**, **Demographic Profiling**, "
     "**Product Attachment Rate** — chuẩn CRM analytics."
 )

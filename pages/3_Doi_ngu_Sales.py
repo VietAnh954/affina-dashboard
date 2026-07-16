@@ -1,6 +1,6 @@
 """
 Trang 3 — Đội ngũ Sales
-Charts: Top 20 salesperson / BDM cards / BDD cards / Sankey CTV→BDM→BDD /
+Charts: Top 20 salesperson / BDM cards / BDD cards / Sankey CTVBDMBDD /
         Scatter HĐ vs Doanh thu / Detail table
 """
 import pandas as pd
@@ -14,8 +14,8 @@ from lib.data import (
     load_master_data, render_sidebar_filters,
 )
 
-st.set_page_config(page_title="Đội ngũ Sales", page_icon="👥", layout="wide")
-st.title("👥 Đội ngũ Sales")
+st.set_page_config(page_title="Đội ngũ Sales", layout="wide")
+st.title("Đội ngũ Sales")
 st.caption("Ranking sale, hiệu suất BDM/BDD, phát hiện star performer.")
 
 df_raw = load_master_data()
@@ -32,7 +32,7 @@ if df.empty:
 # ============================================================================
 # 3.1 Top 20 salesperson
 # ============================================================================
-st.markdown("### 🏆 Top 20 Salesperson theo Doanh thu")
+st.markdown("### Top 20 Salesperson theo Doanh thu")
 
 if "Họ tên sale" in df.columns:
     top_sales = (df.groupby(["Họ tên sale", "Chức danh"], as_index=False)
@@ -62,7 +62,7 @@ st.divider()
 # ============================================================================
 # 3.2 BDM Performance cards
 # ============================================================================
-st.markdown("### 👔 Hiệu suất BDM (Quản lý cấp 1)")
+st.markdown("### Hiệu suất BDM (Quản lý cấp 1)")
 
 if "QUẢN LÝ CẤP 1 (BDM)" in df.columns:
     df_bdm = df[df["QUẢN LÝ CẤP 1 (BDM)"].notna() & (df["QUẢN LÝ CẤP 1 (BDM)"] != "")]
@@ -106,7 +106,7 @@ st.divider()
 # ============================================================================
 # 3.3 BDD Performance
 # ============================================================================
-st.markdown("### 👑 Hiệu suất BDD (Quản lý cấp 2)")
+st.markdown("### Hiệu suất BDD (Quản lý cấp 2)")
 
 if "QUẢN LÝ CẤP 2 (BDD)" in df.columns:
     df_bdd = df[df["QUẢN LÝ CẤP 2 (BDD)"].notna() & (df["QUẢN LÝ CẤP 2 (BDD)"] != "")]
@@ -146,20 +146,20 @@ else:
 st.divider()
 
 # ============================================================================
-# 3.4 Sankey: Sale → BDM → BDD
+# 3.4 Sankey: Sale BDM BDD
 # ============================================================================
-st.markdown("### 🌊 Sankey: CTV → BDM → BDD (top 30 dòng chảy)")
+st.markdown("### Sankey: CTV BDM BDD (top 30 dòng chảy)")
 st.caption("Chiều rộng luồng ∝ doanh thu. Hover để xem chi tiết.")
 
 sk = df[df["QUẢN LÝ CẤP 1 (BDM)"].notna() & df["QUẢN LÝ CẤP 2 (BDD)"].notna() & df["Họ tên sale"].notna()].copy()
 
 if not sk.empty:
-    # Aggregate: từ Sale → BDM
+    # Aggregate: từ Sale BDM
     flow_sale_bdm = (sk.groupby(["Họ tên sale", "QUẢN LÝ CẤP 1 (BDM)"], as_index=False)
                        ["Doanh thu trước thuế"].sum())
     flow_sale_bdm = flow_sale_bdm.nlargest(30, "Doanh thu trước thuế")
 
-    # BDM → BDD
+    # BDM BDD
     flow_bdm_bdd = (sk.groupby(["QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)"], as_index=False)
                       ["Doanh thu trước thuế"].sum())
 
@@ -191,19 +191,19 @@ if not sk.empty:
             label=nodes,
         ),
         link=dict(source=source_i, target=target_i, value=value_i,
-                  hovertemplate="Từ %{source.label} → %{target.label}<br>DT: %{value:,.0f} ₫<extra></extra>"),
+                  hovertemplate="Từ %{source.label} %{target.label}<br>DT: %{value:,.0f} ₫<extra></extra>"),
     )])
     fig.update_layout(font=dict(size=11), height=600)
     st.plotly_chart(fig, use_container_width=True)
 else:
-    empty_state("Chưa có luồng CTV→BDM→BDD hợp lệ trong bộ lọc.")
+    empty_state("Chưa có luồng CTVBDMBDD hợp lệ trong bộ lọc.")
 
 st.divider()
 
 # ============================================================================
 # 3.5 Scatter — HĐ vs Doanh thu (mỗi điểm = 1 sale)
 # ============================================================================
-st.markdown("### 🔬 Scatter: Số HĐ × Doanh thu / Sale")
+st.markdown("### Scatter: Số HĐ × Doanh thu / Sale")
 st.caption("Góc phải-trên = star performer. Kích thước bubble = Affina Revenue.")
 
 scatter_df = (df.groupby(["Họ tên sale", "Chức danh"], as_index=False)
@@ -233,7 +233,7 @@ st.divider()
 # ============================================================================
 # 3.6 Full detail table (with search + download)
 # ============================================================================
-st.markdown("### 📋 Bảng chi tiết toàn bộ Sales")
+st.markdown("### Bảng chi tiết toàn bộ Sales")
 
 detail = (df.groupby(["Họ tên sale", "Chức danh",
                       "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)"], as_index=False, dropna=False)
@@ -261,7 +261,7 @@ st.dataframe(
 
 csv = detail.to_csv(index=False).encode("utf-8-sig")
 st.download_button(
-    label="📥 Tải xuống CSV",
+    label="Tải xuống CSV",
     data=csv,
     file_name="affina_sales_ranking.csv",
     mime="text/csv",
