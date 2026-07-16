@@ -1,21 +1,34 @@
+# =============================================================================
+# AFFINA BRAND THEME — Hồng pastel (extracted từ logo + website affina.com.vn)
+# =============================================================================
+# Palette gốc trích từ brand:
+#   Logo pink:      #F850F8 (magenta rực)
+#   Footer purple:  #7038A0 → #B868D0 → #D078E0 (gradient tím)
+#
+# Dashboard dùng phiên bản PASTEL của các màu trên để dịu mắt khi nhìn số liệu
+# lâu, nhưng vẫn nhận diện được brand Affina.
+# =============================================================================
+
 [theme]
-# Affina brand colors — có thể chỉnh sau
-primaryColor       = "#1F4E78"
-backgroundColor    = "#FFFFFF"
-secondaryBackgroundColor = "#F5F7FA"
-textColor          = "#2C3E50"
-font               = "sans serif"
+# Màu nhấn chính — hồng Affina (nút, slider, link, tab active)
+primaryColor = "#E85BD8"
+
+# Nền chính — trắng ngả hồng cực nhẹ
+backgroundColor = "#FFFAFE"
+
+# Nền phụ (sidebar, input, expander) — hồng pastel nhạt
+secondaryBackgroundColor = "#F9EBF7"
+
+# Chữ — tím than đậm (đọc tốt trên nền hồng nhạt, thay vì đen thuần)
+textColor = "#3D2B4F"
+
+# Font
+font = "sans serif"
 
 [server]
-# Không cần chạy dev tools trên production
-runOnSave = false
-# Cho phép max 200MB upload (dùng khi user tự upload file phân tích)
-maxUploadSize = 200
+headless = true
+enableCORS = false
+enableXsrfProtection = true
 
 [browser]
 gatherUsageStats = false
-
-[client]
-# Toolbar chỉ show cho dev (chủ app), user cuối không cần
-toolbarMode = "minimal"
-showErrorDetails = true

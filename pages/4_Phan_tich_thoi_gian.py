@@ -55,7 +55,7 @@ if not yoy.empty:
     fig = px.bar(
         yoy, x="Month_lbl", y="Doanh thu trước thuế", color="Year",
         barmode="group", category_orders={"Month_lbl": list(MONTH_LABEL.values())},
-        color_continuous_scale="Blues",
+        color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
     )
     fig.update_xaxes(title="Tháng")
     fig.update_yaxes(title="Doanh thu (VNĐ)", tickformat=",")
@@ -100,7 +100,7 @@ if not mom.empty:
     fig.add_trace(go.Bar(
         x=mom["Month_str"], y=mom["Doanh thu trước thuế"],
         name="Doanh thu",
-        marker_color="#1F77B4",
+        marker_color="#B44BC8",
         hovertemplate="Tháng: %{x}<br>DT: %{y:,.0f} ₫<extra></extra>",
     ), secondary_y=False)
     fig.add_trace(go.Scatter(
@@ -156,7 +156,7 @@ if not pivot_mx.empty:
         z=pivot_mx.values,
         x=[f"W{w}" for w in pivot_mx.columns],
         y=[DOW_LABEL[d] if d < 7 else str(d) for d in pivot_mx.index],
-        colorscale="YlOrRd",
+        colorscale=["#FDF2FB", "#F2C4E8", "#E085D0", "#C95BBE", "#8E2F7A"],
         colorbar=dict(title=metric_choice),
         hovertemplate="Tuần %{x}<br>%{y}<br>" + metric_choice + ": %{z:,.0f}<extra></extra>",
     ))

@@ -136,7 +136,7 @@ if len(series) >= 30:
     fig.add_trace(go.Scatter(
         x=series.index, y=series.values,
         mode="lines", name="Doanh thu thực tế",
-        line=dict(color="#3B82F6", width=2),
+        line=dict(color="#B44BC8", width=2),
     ))
 
     # Rolling 7-day average
@@ -144,7 +144,7 @@ if len(series) >= 30:
     fig.add_trace(go.Scatter(
         x=ma7.index, y=ma7.values,
         mode="lines", name="MA 7 ngày",
-        line=dict(color="#F59E0B", width=1, dash="dot"),
+        line=dict(color="#EDB16E", width=1, dash="dot"),
     ))
 
     if forecast is not None:
@@ -152,7 +152,7 @@ if len(series) >= 30:
         fig.add_trace(go.Scatter(
             x=forecast.index, y=forecast.values,
             mode="lines", name="Dự báo",
-            line=dict(color="#EF4444", width=2, dash="dash"),
+            line=dict(color="#E8738F", width=2, dash="dash"),
         ))
         # Confidence band
         fig.add_trace(go.Scatter(
@@ -239,8 +239,8 @@ if len(series) >= 10:
     fig.add_trace(go.Scatter(
         x=normal_series.index, y=normal_series.values,
         mode="markers+lines",
-        line=dict(color="#3B82F6", width=1),
-        marker=dict(size=5, color="#3B82F6"),
+        line=dict(color="#B44BC8", width=1),
+        marker=dict(size=5, color="#B44BC8"),
         name="Bình thường",
     ))
     # Anomalies
@@ -249,7 +249,7 @@ if len(series) >= 10:
         fig.add_trace(go.Scatter(
             x=anom_series.index, y=anom_series.values,
             mode="markers",
-            marker=dict(size=12, color="#EF4444", symbol="star", line=dict(width=1, color="black")),
+            marker=dict(size=12, color="#E8738F", symbol="star", line=dict(width=1, color="black")),
             name=f"Bất thường ({n_anom})",
         ))
 
@@ -315,7 +315,7 @@ if HAS_STATSMODELS and len(series) >= 28:
 
         fig = go.Figure()
         fig = go.Figure(data=[
-            go.Scatter(x=series.index, y=series.values, name="Observed", line=dict(color="#3B82F6")),
+            go.Scatter(x=series.index, y=series.values, name="Observed", line=dict(color="#B44BC8")),
         ])
         st.markdown("**1⃣ Observed** — chuỗi gốc")
         st.line_chart(pd.DataFrame({"Observed": series}), height=200)
@@ -379,7 +379,7 @@ if DATE_COL in df.columns:
         fig.add_trace(go.Bar(
             x=dow_stats.index, y=dow_stats["sum"],
             name="Tổng doanh thu",
-            marker_color="#3B82F6",
+            marker_color="#B44BC8",
             text=[fmt_vnd(v, short=True) for v in dow_stats["sum"]],
             textposition="outside",
         ))
@@ -414,7 +414,7 @@ if DATE_COL in df.columns:
             fig = go.Figure()
             fig.add_trace(go.Bar(
                 x=month_names, y=month_stats.values,
-                marker_color="#10B981",
+                marker_color="#5FBFA0",
                 text=[fmt_vnd(v, short=True) for v in month_stats.values],
                 textposition="outside",
             ))
@@ -445,7 +445,7 @@ if DATE_COL in df.columns:
 
     fig = px.imshow(
         heat, aspect="auto",
-        color_continuous_scale="YlOrRd",
+        color_continuous_scale=["#FDF2FB", "#F2C4E8", "#E085D0", "#C95BBE", "#8E2F7A"],
         labels=dict(x="Tuần trong năm", y="Thứ", color="Doanh thu"),
     )
     fig.update_layout(height=280)
@@ -468,7 +468,7 @@ if len(series) >= 14:
     fig.add_trace(go.Scatter(
         x=cv.index, y=cv.values,
         fill="tozeroy",
-        line=dict(color="#EF4444"),
+        line=dict(color="#E8738F"),
         name="CoV %",
     ))
     fig.add_hline(y=50, line_dash="dash", line_color="orange",

@@ -76,7 +76,7 @@ if "QUẢN LÝ CẤP 1 (BDM)" in df.columns:
         # Show as bar chart + table
         fig = px.bar(
             bdm_perf.head(15), x="QUẢN LÝ CẤP 1 (BDM)", y="Doanh_thu",
-            color="Doanh_thu", color_continuous_scale="Blues",
+            color="Doanh_thu", color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
             hover_data={"So_sale": True, "So_HD": ":,"},
         )
         fig.update_xaxes(tickangle=-40, title="")
@@ -119,7 +119,7 @@ if "QUẢN LÝ CẤP 2 (BDD)" in df.columns:
     if not bdd_perf.empty:
         fig = px.bar(
             bdd_perf.head(10), x="QUẢN LÝ CẤP 2 (BDD)", y="Doanh_thu",
-            color="Doanh_thu", color_continuous_scale="Purples",
+            color="Doanh_thu", color_continuous_scale=["#FDF2FB", "#E8C1F0", "#C77BC9", "#9B4FAE", "#6B3A8E"],
         )
         fig.update_xaxes(tickangle=-40, title="")
         fig.update_yaxes(title="Doanh thu (VNĐ)", tickformat=",")

@@ -179,7 +179,7 @@ with col_age:
                 y=age_dist.values,
                 text=age_dist.values,
                 color=age_dist.values,
-                color_continuous_scale="Blues",
+                color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
             )
             fig.update_traces(textposition="outside")
             fig.update_layout(
@@ -213,7 +213,7 @@ with col_gender:
                 values=gender.values, names=gender.index,
                 hole=0.5,
                 color=gender.index,
-                color_discrete_map={"Nam": "#3B82F6", "Nữ": "#EC4899"},
+                color_discrete_map={"Nam": "#B44BC8", "Nữ": "#E85BD8"},
             )
             fig.update_traces(textposition="outside", textinfo="label+percent")
             st.plotly_chart(apply_plotly_layout(fig, title="", height=350),
@@ -230,7 +230,7 @@ if "Quan hệ" in df_valid.columns:
         fig.add_trace(go.Bar(
             y=rel["Quan hệ"], x=rel["n_customer"],
             orientation="h", name="Số khách",
-            marker_color="#10B981",
+            marker_color="#5FBFA0",
             text=rel["n_customer"], textposition="outside",
         ))
         fig.update_layout(
@@ -286,7 +286,7 @@ if DATE_COL in df_valid.columns and "Doanh thu trước thuế" in df_valid.colu
                 path=["segment"],
                 values="total_revenue",
                 color="n_customer",
-                color_continuous_scale="Viridis",
+                color_continuous_scale=["#F2A0DC", "#D070B8", "#A6409E", "#7D2E78", "#4A1A50"],
                 hover_data={"n_customer": True, "avg_frequency": ":.1f", "avg_recency": ":.0f"},
             )
             fig.update_traces(
@@ -311,7 +311,7 @@ if DATE_COL in df_valid.columns and "Doanh thu trước thuế" in df_valid.colu
             fig = px.imshow(
                 heat_n, aspect="auto",
                 labels=dict(x="R (Recency)", y="F (Frequency)", color="Số khách"),
-                color_continuous_scale="Blues",
+                color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
                 text_auto=True,
             )
             fig.update_layout(height=350)
@@ -322,7 +322,7 @@ if DATE_COL in df_valid.columns and "Doanh thu trước thuế" in df_valid.colu
             fig = px.imshow(
                 heat_m, aspect="auto",
                 labels=dict(x="R (Recency)", y="F (Frequency)", color="Doanh thu"),
-                color_continuous_scale="YlOrRd",
+                color_continuous_scale=["#FDF2FB", "#F2C4E8", "#E085D0", "#C95BBE", "#8E2F7A"],
                 text_auto=".2s",
             )
             fig.update_layout(height=350)
@@ -389,7 +389,7 @@ if DATE_COL in df_valid.columns:
             x=[f"M{i}" for i in retention_display.columns],
             y=retention_display.index,
             aspect="auto",
-            color_continuous_scale="RdYlGn",
+            color_continuous_scale=["#E8738F", "#F2C4B8", "#FDF2FB", "#C5E8D8", "#5FBFA0"],
             zmin=0, zmax=100,
             text_auto=".0f",
             labels=dict(color="% Retention"),
@@ -449,7 +449,7 @@ if "Loại bảo hiểm" in df_valid.columns and n_unique_cust > 0:
         fig = px.imshow(
             matrix_pct,
             aspect="auto",
-            color_continuous_scale="Oranges",
+            color_continuous_scale=["#FDF2FB", "#F2D0E8", "#E8A0D0", "#D070B8", "#A04898"],
             text_auto=True,
             labels=dict(x="Sản phẩm mua thêm", y="Sản phẩm mua đầu", color="% khách"),
         )
@@ -505,7 +505,7 @@ if not df_bhsk.empty:
             fig = px.bar(
                 r_df, y="Add-on", x="% attach",
                 orientation="h", color="% attach",
-                color_continuous_scale="Blues",
+                color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
                 text="% attach",
             )
             fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")

@@ -20,21 +20,29 @@ from sqlalchemy import create_engine, text
 # Constants
 # ============================================================================
 COLORS = {
-    "Core": "#1F77B4",
-    "Neo": "#FF7F0E",
-    "TSA": "#2CA02C",
-    "positive": "#2CA02C",
-    "negative": "#D62728",
-    "warning": "#F1C40F",
-    # Loại bảo hiểm
-    "BHSK": "#E74C3C",
-    "BHXM": "#3498DB",
-    "BHYT/BHXH": "#9B59B6",
-    "BHOTO": "#F39C12",
-    "BHDL": "#1ABC9C",
-    "TNDS": "#34495E",
-    "BHRR": "#E67E22",
+    # ── AFFINA BRAND PALETTE (hồng pastel) ──────────────────────────────
+    # Trích xuất từ logo (#F850F8) + footer gradient (#7038A0 → #D078E0)
+    # 3 Source dùng 3 sắc độ chính của brand — phân biệt rõ nhưng hài hòa
+    "Core": "#B44BC8",        # tím orchid — nhánh chủ lực, đậm nhất
+    "Neo":  "#F06EC2",        # hồng flamingo — nổi bật thứ 2
+    "TSA":  "#8B6FC9",        # tím lavender — dịu
+
+    "positive": "#5FBFA0",    # xanh mint pastel (tăng trưởng)
+    "negative": "#E8738F",    # hồng rose đậm (suy giảm)
+    "warning":  "#EDB16E",    # cam peach pastel
+
+    # 7 Loại bảo hiểm — gradient hồng→tím quanh brand hue
+    "BHSK":      "#E85BD8",   # hồng magenta (sản phẩm chủ lực = màu logo)
+    "BHXM":      "#9F7BD9",   # tím lilac
+    "BHYT/BHXH": "#C77BC9",   # hồng cẩm quỳ
+    "BHOTO":     "#7D5BA6",   # tím đậm
+    "BHDL":      "#F2A0DC",   # hồng phấn nhạt
+    "TNDS":      "#6B4E8E",   # tím than
+    "BHRR":      "#D96FA8",   # hồng dâu
 }
+
+# Gradient scale cho heatmap/treemap — thay Blues/YlOrRd mặc định
+PINK_SCALE = ["#FDF2FB", "#F9D8F0", "#F0AEE2", "#E285D3", "#C95BBE", "#A6409E", "#7D2E78"]
 
 DATE_COL = "Ngày thanh toán"
 DEFAULT_TTL = 300 # 5 phút
@@ -237,7 +245,13 @@ def apply_plotly_layout(fig, title: str = "", height: int | None = None):
         font=dict(family="Segoe UI, Arial", size=12),
         margin=dict(l=30, r=20, t=50 if title else 20, b=30),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        hoverlabel=dict(font_size=13),
+        hoverlabel=dict(font_size=13, bgcolor="white", bordercolor="#E85BD8"),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#FFFAFE",
+        colorway=[
+            "#E85BD8", "#B44BC8", "#8B6FC9", "#F06EC2", "#7D5BA6",
+            "#D96FA8", "#C77BC9", "#9F7BD9", "#F2A0DC", "#6B4E8E",
+        ],
     )
     if height:
         fig.update_layout(height=height)
@@ -245,4 +259,4 @@ def apply_plotly_layout(fig, title: str = "", height: int | None = None):
 
 
 def empty_state(msg: str = "Không có dữ liệu phù hợp với bộ lọc hiện tại."):
-    st.info(f"ℹ {msg}")
+    st.info(msg)

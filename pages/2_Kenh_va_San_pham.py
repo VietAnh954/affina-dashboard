@@ -118,7 +118,7 @@ tm = tm[tm["DT"] > 0]
 if not tm.empty:
     fig = px.treemap(
         tm, path=["Nhà BH", "Loại bảo hiểm"], values="DT",
-        color="AR", color_continuous_scale="Blues",
+        color="AR", color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
     )
     fig.update_traces(hovertemplate="<b>%{label}</b><br>DT: %{value:,.0f} ₫<br>Affina: %{color:,.0f} ₫<extra></extra>",
                       textinfo="label+value")

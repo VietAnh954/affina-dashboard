@@ -398,9 +398,9 @@ if not df_prev.empty:
                 decomp['n_cur']*decomp['avg_cur']
             ]],
             connector={"line": {"color": "rgb(63, 63, 63)"}},
-            increasing={"marker": {"color": "#10B981"}},
-            decreasing={"marker": {"color": "#EF4444"}},
-            totals={"marker": {"color": "#3B82F6"}},
+            increasing={"marker": {"color": "#5FBFA0"}},
+            decreasing={"marker": {"color": "#E8738F"}},
+            totals={"marker": {"color": "#B44BC8"}},
         ))
         fig.update_layout(showlegend=False, height=380, yaxis_tickformat=",.0f")
         st.plotly_chart(apply_plotly_layout(fig, title="Waterfall — Doanh thu đi từ kỳ trước sang kỳ này"),
@@ -489,7 +489,7 @@ if len(numeric_cols) >= 3:
         z=corr_matrix.values,
         x=corr_matrix.columns,
         y=corr_matrix.columns,
-        colorscale="RdBu_r",
+        colorscale=["#6B4E8E", "#9F7BD9", "#FDF2FB", "#F06EC2", "#C93DA8"],
         zmin=-1, zmax=1,
         text=corr_matrix.round(2).values,
         texttemplate="%{text}",
@@ -535,9 +535,9 @@ if "Họ tên sale" in df.columns:
 
         # Histogram with percentile lines
         fig = go.Figure()
-        fig.add_trace(go.Histogram(x=rev_sale.values, nbinsx=40, marker_color="#3B82F6", opacity=0.7))
-        for label, val, color in [("P25", p25, "#F59E0B"), ("P50", p50, "#10B981"),
-                                    ("P75", p75, "#8B5CF6"), ("P90", p90, "#EF4444")]:
+        fig.add_trace(go.Histogram(x=rev_sale.values, nbinsx=40, marker_color="#B44BC8", opacity=0.7))
+        for label, val, color in [("P25", p25, "#EDB16E"), ("P50", p50, "#5FBFA0"),
+                                    ("P75", p75, "#9F7BD9"), ("P90", p90, "#E8738F")]:
             fig.add_vline(x=val, line_dash="dash", line_color=color,
                           annotation_text=label, annotation_position="top")
         fig.update_layout(

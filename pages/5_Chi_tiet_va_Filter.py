@@ -54,10 +54,10 @@ def _apply_sheet_format(ws, df: pd.DataFrame) -> None:
     if ws.max_row == 0 or len(df) == 0:
         return
 
-    header_fill = PatternFill(start_color="305496", end_color="305496", fill_type="solid")
+    header_fill = PatternFill(start_color="7D2E78", end_color="7D2E78", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF", size=11)
     header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    thin = Side(border_style="thin", color="BFBFBF")
+    thin = Side(border_style="thin", color="D4B8D9")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
     # Header row
@@ -197,7 +197,7 @@ def build_excel(
                 ws.column_dimensions["A"].width = 40
                 ws.column_dimensions["B"].width = 45
                 # Style header
-                header_fill = PatternFill(start_color="305496", end_color="305496", fill_type="solid")
+                header_fill = PatternFill(start_color="7D2E78", end_color="7D2E78", fill_type="solid")
                 for cell in ws[1]:
                     cell.fill = header_fill
                     cell.font = Font(bold=True, color="FFFFFF", size=11)

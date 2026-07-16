@@ -47,13 +47,13 @@ HEAD_SALES = {
         "code": "LD0991",
         "phone": "0909310495",
         "short": "An",
-        "color": "#3B82F6", # xanh dương
+        "color": "#B44BC8", # xanh dương
     },
     "NGUYỄN THỊ HỒNG LOAN": {
         "code": "LD0894",
         "phone": "0937431229",
         "short": "Loan",
-        "color": "#EF4444", # đỏ
+        "color": "#E8738F", # đỏ
     },
 }
 
@@ -437,7 +437,7 @@ def render_head_section(
             fig = px.bar(
                 combined, x="month", y="Doanh thu trước thuế", color="Kỳ",
                 barmode="group",
-                color_discrete_map={"Kỳ này": head_info["color"], comparison_label: "#94A3B8"},
+                color_discrete_map={"Kỳ này": head_info["color"], comparison_label: "#C9B8D6"},
                 labels={"month": "Tháng", "Doanh thu trước thuế": "Doanh thu (VNĐ)"},
             )
             fig.update_yaxes(tickformat=",.0f")
@@ -519,7 +519,7 @@ def render_head_section(
             fig = px.bar(
                 bdd_perf, x="revenue", y="QUẢN LÝ CẤP 2 (BDD)",
                 orientation="h",
-                color="revenue", color_continuous_scale="Blues",
+                color="revenue", color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
                 labels={"revenue": "Doanh thu (VNĐ)", "QUẢN LÝ CẤP 2 (BDD)": "BDD"},
                 hover_data={"n_sale": True, "n_hd": True},
             )
@@ -540,11 +540,11 @@ def render_head_section(
     if "Ngày kết thúc" in df_head.columns and df_head["Ngày kết thúc"].notna().any():
         today = pd.Timestamp.now().normalize()
         buckets = [
-            ("Trong 7 ngày", 1, 7, "#DC2626"),
-            ("8-15 ngày", 8, 15, "#F59E0B"),
-            ("16-30 ngày", 16, 30, "#EAB308"),
-            ("31-60 ngày", 31, 60, "#10B981"),
-            ("61-90 ngày", 61, 90, "#3B82F6"),
+            ("Trong 7 ngày", 1, 7, "#C93DA8"),
+            ("8-15 ngày", 8, 15, "#EDB16E"),
+            ("16-30 ngày", 16, 30, "#D9A0C4"),
+            ("31-60 ngày", 31, 60, "#5FBFA0"),
+            ("61-90 ngày", 61, 90, "#B44BC8"),
         ]
         rows = []
         for label, d1, d2, color in buckets:
