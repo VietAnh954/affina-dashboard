@@ -39,75 +39,156 @@ st.set_page_config(page_title="KPI Competition", layout="wide")
 # ── Auth ──
 require_auth("kpi", "KPI Competition — CLB Tinh Hoa Affina")
 
-# ── KPI Dark Theme CSS (trích từ poster CLB Tinh Hoa) ──
+# ── KPI Dark Theme CSS (scope vào main content ONLY, không leak sidebar) ──
 st.markdown("""
 <style>
-/* Background gradient tím-xanh đậm giống poster KPI */
-[data-testid="stAppViewContainer"] {
-    background: linear-gradient(160deg, #0B0E2E 0%, #1A1040 35%, #2A1248 60%, #1A1040 100%);
+/* ================================================================
+   KPI DARK THEME — chỉ áp dụng cho vùng main content
+   Dùng .stMainBlockContainer (Streamlit 1.32+) để không ảnh hưởng sidebar
+   ================================================================ */
+
+/* Background chỉ cho main area */
+.stMainBlockContainer {
+    background: linear-gradient(160deg, #0B0E2E 0%, #1A1040 35%, #2A1248 60%, #1A1040 100%) !important;
+    padding-top: 1rem;
 }
+
+/* Header bar — trong suốt tối */
 [data-testid="stHeader"] {
-    background: rgba(11, 14, 46, 0.9);
+    background: rgba(11, 14, 46, 0.85) !important;
 }
-/* Text chính → trắng */
-[data-testid="stAppViewContainer"] h1,
-[data-testid="stAppViewContainer"] h2,
-[data-testid="stAppViewContainer"] h3,
-[data-testid="stAppViewContainer"] p,
-[data-testid="stAppViewContainer"] span,
-[data-testid="stAppViewContainer"] label,
-[data-testid="stAppViewContainer"] .stMarkdown {
+
+/* Text trong main content → trắng kem */
+.stMainBlockContainer h1,
+.stMainBlockContainer h2,
+.stMainBlockContainer h3,
+.stMainBlockContainer p,
+.stMainBlockContainer li,
+.stMainBlockContainer label {
     color: #F0E6D8 !important;
 }
-/* Metric value → vàng gold */
-[data-testid="stMetricValue"] {
-    color: #D4A847 !important;
-    font-weight: 700;
-}
-[data-testid="stMetricDelta"] {
-    opacity: 0.9;
-}
-/* Metric label */
-[data-testid="stMetricLabel"] p {
-    color: #C0B090 !important;
-}
-/* Card / container nền */
-[data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"] > div > div {
-    border-radius: 8px;
-}
-/* Tab text */
-[data-testid="stAppViewContainer"] button[data-baseweb="tab"] {
-    color: #C0B090 !important;
-}
-[data-testid="stAppViewContainer"] button[data-baseweb="tab"][aria-selected="true"] {
-    color: #D4A847 !important;
-    border-bottom-color: #D4A847 !important;
-}
-/* Table header */
-[data-testid="stAppViewContainer"] thead th {
-    background-color: rgba(30, 20, 60, 0.8) !important;
-    color: #D4A847 !important;
-}
-/* Table cells */
-[data-testid="stAppViewContainer"] tbody td {
+.stMainBlockContainer .stMarkdown p,
+.stMainBlockContainer .stMarkdown li,
+.stMainBlockContainer .stMarkdown span {
     color: #F0E6D8 !important;
 }
-/* Info/success/warning boxes */
-[data-testid="stAppViewContainer"] .stAlert {
-    background-color: rgba(30, 20, 60, 0.6) !important;
-    border-color: #D4A847 !important;
+
+/* Metric cards — nền bán trong suốt + viền gold */
+.stMainBlockContainer [data-testid="stMetric"] {
+    background: rgba(26, 16, 64, 0.6) !important;
+    border: 1px solid rgba(212, 168, 71, 0.3) !important;
+    border-radius: 12px !important;
+    padding: 16px 20px !important;
 }
-/* Progress bar */
-[data-testid="stAppViewContainer"] .stProgress > div > div > div {
-    background-color: #D4A847 !important;
+.stMainBlockContainer [data-testid="stMetricValue"] {
+    color: #D4A847 !important;
+    font-weight: 700 !important;
+    font-size: 1.6rem !important;
 }
-/* Divider */
-[data-testid="stAppViewContainer"] hr {
-    border-color: rgba(212, 168, 71, 0.3) !important;
+.stMainBlockContainer [data-testid="stMetricLabel"] p {
+    color: #C0B090 !important;
+    font-size: 0.85rem !important;
 }
-/* Caption */
-[data-testid="stAppViewContainer"] .stCaption p {
+.stMainBlockContainer [data-testid="stMetricDelta"] {
+    opacity: 0.85;
+}
+
+/* Progress bar → gold */
+.stMainBlockContainer .stProgress > div > div > div {
+    background: linear-gradient(90deg, #D4A847, #E8C068) !important;
+    border-radius: 4px;
+}
+.stMainBlockContainer .stProgress > div > div {
+    background-color: rgba(212, 168, 71, 0.15) !important;
+}
+
+/* Tabs — gold active */
+.stMainBlockContainer button[data-baseweb="tab"] {
     color: #9A8A6A !important;
+    font-weight: 600;
+}
+.stMainBlockContainer button[data-baseweb="tab"][aria-selected="true"] {
+    color: #D4A847 !important;
+    border-bottom: 2px solid #D4A847 !important;
+}
+
+/* Table — dark nền + gold header */
+.stMainBlockContainer [data-testid="stDataFrame"] {
+    border-radius: 8px;
+    overflow: hidden;
+}
+.stMainBlockContainer thead th {
+    background-color: rgba(40, 25, 80, 0.9) !important;
+    color: #D4A847 !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid rgba(212, 168, 71, 0.4) !important;
+}
+.stMainBlockContainer tbody td {
+    color: #E8DCC8 !important;
+    border-bottom: 1px solid rgba(100, 80, 140, 0.2) !important;
+}
+.stMainBlockContainer tbody tr:hover td {
+    background-color: rgba(212, 168, 71, 0.08) !important;
+}
+
+/* Alert boxes */
+.stMainBlockContainer [data-testid="stAlert"] {
+    background-color: rgba(30, 20, 60, 0.5) !important;
+    border: 1px solid rgba(212, 168, 71, 0.3) !important;
+    border-radius: 8px !important;
+}
+.stMainBlockContainer [data-testid="stAlert"] p {
+    color: #E8DCC8 !important;
+}
+
+/* Radio + selectbox — readable on dark bg */
+.stMainBlockContainer [data-testid="stRadio"] label span,
+.stMainBlockContainer .stSelectbox label,
+.stMainBlockContainer .stMultiSelect label,
+.stMainBlockContainer .stSlider label {
+    color: #C0B090 !important;
+}
+
+/* Divider */
+.stMainBlockContainer hr {
+    border-color: rgba(212, 168, 71, 0.2) !important;
+}
+
+/* Caption */
+.stMainBlockContainer [data-testid="stCaptionContainer"] p {
+    color: #8A7A5A !important;
+}
+
+/* Download button — gold outline */
+.stMainBlockContainer [data-testid="stDownloadButton"] button {
+    border-color: #D4A847 !important;
+    color: #D4A847 !important;
+}
+.stMainBlockContainer [data-testid="stDownloadButton"] button:hover {
+    background-color: rgba(212, 168, 71, 0.15) !important;
+}
+
+/* Expander — dark bg */
+.stMainBlockContainer [data-testid="stExpander"] {
+    border-color: rgba(212, 168, 71, 0.2) !important;
+}
+
+/* ================================================================
+   SIDEBAR — giữ theme hồng pastel gốc, KHÔNG bị dark overwrite
+   ================================================================ */
+[data-testid="stSidebar"] {
+    background-color: #F9EBF7 !important;
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label {
+    color: #3D2B4F !important;
+}
+[data-testid="stSidebarNavItems"] a span {
+    color: #3D2B4F !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -115,7 +196,7 @@ st.markdown("""
 
 def _kpi_layout(fig, title="", height=400):
     """Override layout cho dark background KPI page."""
-    fig = _kpi_layout(fig, title=title, height=height)
+    fig = apply_plotly_layout(fig, title=title, height=height)
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(20,15,50,0.3)",
