@@ -192,9 +192,6 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     st.sidebar.divider()
     st.sidebar.caption("Affina Sales Dashboard")
 
-    # Language toggle
-    render_lang_toggle()
-
     return {
         "start_date": pd.Timestamp(start_date),
         "end_date": pd.Timestamp(end_date),
