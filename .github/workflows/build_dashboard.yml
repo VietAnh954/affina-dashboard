@@ -1,10 +1,18 @@
 name: Build Dashboard Data
 
 on:
-  # Cron: 10:00 VN mỗi ngày = 03:00 UTC
-  # Công thức: giờ VN - 7 = giờ UTC
+  # Cron schedules (gio VN - 7 = gio UTC)
+  # 07:11 VN = 00:11 UTC
+  # 09:21 VN = 02:21 UTC
+  # 10:00 VN = 03:00 UTC (giu nguyen)
+  # 14:27 VN = 07:27 UTC
+  # 16:33 VN = 09:33 UTC
   schedule:
+    - cron: '11 0 * * *'
+    - cron: '21 2 * * *'
     - cron: '0 3 * * *'
+    - cron: '27 7 * * *'
+    - cron: '33 9 * * *'
   # Cho phép chạy tay từ GitHub UI
   workflow_dispatch:
   # Chạy khi push code build script (test change)
@@ -27,22 +35,22 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.12
+      - name: 🐍 Setup Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements-actions.txt
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-actions.txt
 
-      - name: Run build_dashboard_data.py
+      - name: 🚀 Run build_dashboard_data.py
         env:
           SUPABASE_DB_URI:      ${{ secrets.SUPABASE_DB_URI }}
           GOOGLE_CLIENT_ID:     ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -52,7 +60,7 @@ jobs:
           PYTHONUNBUFFERED: '1'
         run: python scripts/build_dashboard_data.py
 
-      - name: Job Summary
+      - name: 📊 Job Summary
         if: always()
         run: |
           echo "## Build Dashboard Data — $(date '+%Y-%m-%d %H:%M:%S %Z')" >> $GITHUB_STEP_SUMMARY
@@ -60,4 +68,4 @@ jobs:
           echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Dashboard: https://affina-dashboard.streamlit.app" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Dashboard: https://affina-dashboard.streamlit.app" >> $GITHUB_STEP_SUMMARY

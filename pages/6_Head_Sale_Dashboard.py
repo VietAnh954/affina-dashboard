@@ -363,56 +363,97 @@ def render_head_section(
     st.divider()
 
     # -----------------------------------------------------------------------
-    # 2 CỘT: Sunburst hierarchy + Product mix donut
     # -----------------------------------------------------------------------
-    col_hier, col_mix = st.columns([3, 2])
+    # TOP SALES TRONG NHANH (thay sunburst) + Product mix (thay pie)
+    # -----------------------------------------------------------------------
 
-    with col_hier:
-        st.markdown("** Cấu trúc nhánh — Doanh thu theo cấp**")
-        # Sunburst: Head BDD BDM Sale
-        hier_cols = []
-        for c in ["QUẢN LÝ CẤP 2 (BDD)", "QUẢN LÝ CẤP 1 (BDM)", "Họ tên sale"]:
-            if c in df_head.columns:
-                hier_cols.append(c)
-        if hier_cols and "Doanh thu trước thuế" in df_head.columns:
-            df_hier = df_head[hier_cols + ["Doanh thu trước thuế"]].copy()
-            df_hier = df_hier.dropna(subset=hier_cols)
-            df_hier["_head"] = head_info["short"]
-            if not df_hier.empty:
-                fig = px.sunburst(
-                    df_hier,
-                    path=["_head"] + hier_cols,
-                    values="Doanh thu trước thuế",
-                    color_discrete_sequence=px.colors.qualitative.Set3,
+    # Filter theo thang/nam cho section nay
+    st.markdown("**Top Sales trong nhanh**")
+    tf_col1, tf_col2, tf_col3 = st.columns([1, 1, 1])
+    with tf_col1:
+        top_n_opt = st.radio(
+            "Hien thi", options=["Top 5", "Top 10", "Top 20"],
+            horizontal=True, key=f"head_topn_{head_info['short']}",
+        )
+        top_n = int(top_n_opt.split(" ")[1])
+    with tf_col2:
+        if DATE_COL in df_head.columns and df_head[DATE_COL].notna().any():
+            years_avail = sorted(df_head[DATE_COL].dt.year.dropna().unique().astype(int))
+            year_filter = st.selectbox(
+                "Nam", options=["Tat ca"] + [str(y) for y in years_avail],
+                key=f"head_year_{head_info['short']}",
+            )
+        else:
+            year_filter = "Tat ca"
+    with tf_col3:
+        if year_filter != "Tat ca" and DATE_COL in df_head.columns:
+            months_avail = sorted(
+                df_head[df_head[DATE_COL].dt.year == int(year_filter)][DATE_COL]
+                .dt.month.dropna().unique().astype(int)
+            )
+            month_filter = st.selectbox(
+                "Thang", options=["Tat ca"] + [str(m) for m in months_avail],
+                key=f"head_month_{head_info['short']}",
+            )
+        else:
+            month_filter = "Tat ca"
+
+    # Apply time filter
+    df_filtered_head = df_head.copy()
+    if year_filter != "Tat ca" and DATE_COL in df_filtered_head.columns:
+        df_filtered_head = df_filtered_head[df_filtered_head[DATE_COL].dt.year == int(year_filter)]
+    if month_filter != "Tat ca" and DATE_COL in df_filtered_head.columns:
+        df_filtered_head = df_filtered_head[df_filtered_head[DATE_COL].dt.month == int(month_filter)]
+
+    col_top, col_mix = st.columns([3, 2])
+
+    with col_top:
+        if "Họ tên sale" in df_filtered_head.columns and not df_filtered_head.empty:
+            top_df = (df_filtered_head.groupby("Họ tên sale", as_index=False)
+                          .agg(revenue=("Doanh thu trước thuế", "sum"),
+                               n_hd=("Số hợp đồng", "nunique"))
+                          .sort_values("revenue", ascending=True)
+                          .tail(top_n))
+            if not top_df.empty:
+                fig = px.bar(
+                    top_df, x="revenue", y="Họ tên sale",
+                    orientation="h", text_auto=".2s",
+                    color="revenue",
+                    color_continuous_scale=["#F9EBF7", "#E85BD8", "#B44BC8", "#7D2E78"],
+                    hover_data={"n_hd": True},
                 )
-                fig.update_traces(
-                    hovertemplate="<b>%{label}</b><br>Doanh thu: %{value:,.0f} ₫<br>%{percentParent:.1%} của cha<extra></extra>"
-                )
+                fig.update_layout(coloraxis_showscale=False, yaxis_title="")
+                fig.update_xaxes(title="Doanh thu (VND)", tickformat=",")
+                period_label = ""
+                if year_filter != "Tat ca":
+                    period_label = f" — {year_filter}"
+                if month_filter != "Tat ca":
+                    period_label += f"/{month_filter}"
                 st.plotly_chart(
-                    apply_plotly_layout(fig, title="", height=420),
+                    apply_plotly_layout(fig, title=f"{top_n_opt} Sales{period_label}", height=max(350, top_n * 35)),
                     use_container_width=True,
                 )
             else:
-                empty_state("Không có dữ liệu hierarchy hợp lệ.")
+                empty_state("Khong co data sau filter.")
         else:
-            empty_state("Thiếu cột BDD/BDM/Sale để vẽ hierarchy.")
+            empty_state()
 
     with col_mix:
-        st.markdown("** Cơ cấu Loại bảo hiểm**")
-        if "Loại bảo hiểm" in df_head.columns:
-            mix = df_head.groupby("Loại bảo hiểm", as_index=False)["Doanh thu trước thuế"].sum()
+        st.markdown("**Loai bao hiem**")
+        if "Loại bảo hiểm" in df_filtered_head.columns and not df_filtered_head.empty:
+            mix = (df_filtered_head.groupby("Loại bảo hiểm", as_index=False)["Doanh thu trước thuế"]
+                       .sum().sort_values("Doanh thu trước thuế", ascending=True))
             mix = mix[mix["Doanh thu trước thuế"] > 0]
             if not mix.empty:
-                fig = px.pie(
-                    mix, names="Loại bảo hiểm", values="Doanh thu trước thuế",
-                    hole=0.5, color="Loại bảo hiểm", color_discrete_map=COLORS,
+                fig = px.bar(
+                    mix, x="Doanh thu trước thuế", y="Loại bảo hiểm",
+                    orientation="h", text_auto=".2s",
+                    color="Loại bảo hiểm", color_discrete_map=COLORS,
                 )
-                fig.update_traces(
-                    textposition="outside", textinfo="label+percent",
-                    hovertemplate="<b>%{label}</b><br>%{value:,.0f} ₫<extra></extra>",
-                )
+                fig.update_layout(showlegend=False, yaxis_title="")
+                fig.update_xaxes(title="Doanh thu (VND)", tickformat=",")
                 st.plotly_chart(
-                    apply_plotly_layout(fig, title="", height=420),
+                    apply_plotly_layout(fig, title="", height=350),
                     use_container_width=True,
                 )
 

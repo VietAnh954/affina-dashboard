@@ -42,22 +42,6 @@ require_auth("kpi", "KPI Competition — CLB Tinh Hoa Affina")
 # Theme: dùng chung hồng pastel với các trang khác (dark theme đã bỏ)
 
 
-def apply_plotly_layout(fig, title="", height=400):
-    """Override layout cho dark background KPI page."""
-    fig = apply_plotly_layout(fig, title=title, height=height)
-    fig.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(20,15,50,0.3)",
-        font=dict(color="#F0E6D8"),
-        title=dict(font=dict(color="#D4A847")) if title else None,
-        xaxis=dict(gridcolor="rgba(212,168,71,0.15)", color="#C0B090"),
-        yaxis=dict(gridcolor="rgba(212,168,71,0.15)", color="#C0B090"),
-        legend=dict(font=dict(color="#F0E6D8")),
-        hoverlabel=dict(bgcolor="#1A1040", font_color="#F0E6D8", bordercolor="#D4A847"),
-    )
-    return fig
-
-
 # ============================================================================
 # CONFIG
 # ============================================================================
