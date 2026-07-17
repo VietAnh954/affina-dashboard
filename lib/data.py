@@ -111,43 +111,16 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     """
     Render sidebar filters. Return dict of applied filters.
     """
-    from lib.i18n import t, render_lang_switcher
+    from lib.i18n import t, render_logo, render_lang_switch
 
-    # ── Logo trên cùng sidebar (CSS inject above navigation) ──
-    st.markdown(
-        """<style>
-        [data-testid="stSidebarNav"]::before {
-            content: "AFFINA";
-            display: block;
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: 3px;
-            text-align: center;
-            padding: 16px 0 4px 0;
-            background: linear-gradient(135deg, #E85BD8, #8B6FC9);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        [data-testid="stSidebarNav"]::after {
-            content: "Insurance · Health · Finance";
-            display: block;
-            font-size: 10px;
-            color: #7D5BA6;
-            letter-spacing: 1px;
-            text-align: center;
-            padding: 0 0 12px 0;
-            border-bottom: 1px solid rgba(232,91,216,0.15);
-            margin-bottom: 8px;
-        }
-        </style>""",
-        unsafe_allow_html=True,
-    )
+    # Logo trên cùng sidebar
+    render_logo()
 
-    # ── Lang switcher (ngay dưới nav) ──
-    render_lang_switcher()
+    # Language switch
+    render_lang_switch()
 
     st.sidebar.divider()
-    st.sidebar.markdown(f"### {t('filters')}")
+    st.sidebar.markdown(f"### {t('filter_title')}")
 
     # Date range
     date_min = df[DATE_COL].min()
@@ -158,7 +131,7 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
         date_max = pd.Timestamp.today()
 
     date_range = st.sidebar.date_input(
-        t("date_range"),
+        t("filter_date"),
         value=(date_min.date(), date_max.date()),
         min_value=date_min.date(),
         max_value=date_max.date(),
@@ -172,31 +145,32 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     # Source
     sources = sorted(df["Source"].dropna().unique().tolist()) if "Source" in df.columns else []
     selected_sources = st.sidebar.multiselect(
-        t("source"), options=sources, default=sources
+        t("filter_source"), options=sources, default=sources
     )
 
     # Channel
     channels = sorted(df["Channel"].dropna().unique().tolist()) if "Channel" in df.columns else []
     selected_channels = st.sidebar.multiselect(
-        t("channel"), options=channels, default=channels
+        t("filter_channel"), options=channels, default=channels
     )
 
-    # Loại BH
+    # Loai BH
     loai_bh = sorted(df["Loại bảo hiểm"].dropna().unique().tolist()) if "Loại bảo hiểm" in df.columns else []
     selected_loai = st.sidebar.multiselect(
-        t("insurance_type"), options=loai_bh, default=loai_bh
+        t("filter_loaibh"), options=loai_bh, default=loai_bh
     )
 
-    # Nhà BH
+    # Nha BH
     nha_bh = sorted(df["Nhà BH"].dropna().unique().tolist()) if "Nhà BH" in df.columns else []
     selected_nha = st.sidebar.multiselect(
-        t("insurer"), options=nha_bh, default=[]
+        t("filter_nhabh"), options=nha_bh, default=[],
+        help=t("filter_empty_all"),
     )
 
     st.sidebar.divider()
 
     # Refresh button
-    if st.sidebar.button(t("refresh"), use_container_width=True):
+    if st.sidebar.button(t("btn_refresh"), use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -216,7 +190,7 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
         st.sidebar.caption(f"{t('total_rows')}: **{meta.get('row_count', 0):,}**")
 
     st.sidebar.divider()
-    st.sidebar.caption("Made with for Affina")
+    st.sidebar.caption("Affina Sales Dashboard")
 
     # Language toggle
     render_lang_toggle()
@@ -276,24 +250,24 @@ def fmt_vnd(x, short: bool = False) -> str:
     if pd.isna(x):
         return "-"
     x = float(x)
-    lang = _get_lang()
+    from lib.i18n import get_lang
+    lang = get_lang()
     if short:
         if lang == "vi":
-            units = [("nghìn tỷ", 1e12), ("tỷ", 1e9), ("tr", 1e6), ("k", 1e3)]
+            units = [("nghin ty", 1e12), ("ty", 1e9), ("tr", 1e6), ("k", 1e3)]
         else:
             units = [("T", 1e12), ("B", 1e9), ("M", 1e6), ("K", 1e3)]
         for unit, div in units:
             if abs(x) >= div:
                 val = x / div
-                # 2 decimal nếu < 10, 1 decimal nếu < 100, 0 nếu lớn
                 if abs(val) < 10:
                     return f"{val:,.2f} {unit}"
                 elif abs(val) < 100:
                     return f"{val:,.1f} {unit}"
                 else:
                     return f"{val:,.0f} {unit}"
-        return f"{x:,.0f} ₫"
-    return f"{x:,.0f} ₫"
+        return f"{x:,.0f}"
+    return f"{x:,.0f}"
 
 
 def fmt_pct(x) -> str:
