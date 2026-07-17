@@ -22,6 +22,7 @@ from lib.data import (
     fmt_num, fmt_vnd,
     load_master_data, render_sidebar_filters,
 )
+from lib.i18n import t
 
 # ============================================================================
 # Page config — chỉ chạy 1 lần cho trang chủ

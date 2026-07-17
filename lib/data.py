@@ -110,27 +110,44 @@ def load_meta() -> dict:
 def render_sidebar_filters(df: pd.DataFrame) -> dict:
     """
     Render sidebar filters. Return dict of applied filters.
-    Sidebar hiển thị chung cho mọi trang import và gọi từ mọi page.
     """
-    # ── Logo + Slogan ──
-    st.sidebar.markdown(
-        """
-        <div style="text-align:center; padding: 8px 0 12px 0;">
-            <div style="font-size:28px; font-weight:800; letter-spacing:3px;
-                        background: linear-gradient(135deg, #E85BD8, #8B6FC9);
-                        -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                AFFINA
-            </div>
-            <div style="font-size:11px; color:#7D5BA6; letter-spacing:1px; margin-top:2px;">
-                Bao hiem &middot; Suc khoe &middot; Tai chinh
-            </div>
-        </div>
-        """,
+    from lib.i18n import t, render_lang_switcher
+
+    # ── Logo trên cùng sidebar (CSS inject above navigation) ──
+    st.markdown(
+        """<style>
+        [data-testid="stSidebarNav"]::before {
+            content: "AFFINA";
+            display: block;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-align: center;
+            padding: 16px 0 4px 0;
+            background: linear-gradient(135deg, #E85BD8, #8B6FC9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        [data-testid="stSidebarNav"]::after {
+            content: "Insurance · Health · Finance";
+            display: block;
+            font-size: 10px;
+            color: #7D5BA6;
+            letter-spacing: 1px;
+            text-align: center;
+            padding: 0 0 12px 0;
+            border-bottom: 1px solid rgba(232,91,216,0.15);
+            margin-bottom: 8px;
+        }
+        </style>""",
         unsafe_allow_html=True,
     )
-    st.sidebar.divider()
 
-    st.sidebar.markdown("### Bo loc chung")
+    # ── Lang switcher (ngay dưới nav) ──
+    render_lang_switcher()
+
+    st.sidebar.divider()
+    st.sidebar.markdown(f"### {t('filters')}")
 
     # Date range
     date_min = df[DATE_COL].min()
@@ -141,7 +158,7 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
         date_max = pd.Timestamp.today()
 
     date_range = st.sidebar.date_input(
-        "Khoảng thời gian",
+        t("date_range"),
         value=(date_min.date(), date_max.date()),
         min_value=date_min.date(),
         max_value=date_max.date(),
@@ -155,31 +172,31 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     # Source
     sources = sorted(df["Source"].dropna().unique().tolist()) if "Source" in df.columns else []
     selected_sources = st.sidebar.multiselect(
-        "Source", options=sources, default=sources
+        t("source"), options=sources, default=sources
     )
 
     # Channel
     channels = sorted(df["Channel"].dropna().unique().tolist()) if "Channel" in df.columns else []
     selected_channels = st.sidebar.multiselect(
-        "Channel", options=channels, default=channels
+        t("channel"), options=channels, default=channels
     )
 
     # Loại BH
     loai_bh = sorted(df["Loại bảo hiểm"].dropna().unique().tolist()) if "Loại bảo hiểm" in df.columns else []
     selected_loai = st.sidebar.multiselect(
-        "Loại bảo hiểm", options=loai_bh, default=loai_bh
+        t("insurance_type"), options=loai_bh, default=loai_bh
     )
 
     # Nhà BH
     nha_bh = sorted(df["Nhà BH"].dropna().unique().tolist()) if "Nhà BH" in df.columns else []
     selected_nha = st.sidebar.multiselect(
-        "Nhà bảo hiểm", options=nha_bh, default=[] # default trống không lọc
+        t("insurer"), options=nha_bh, default=[]
     )
 
     st.sidebar.divider()
 
     # Refresh button
-    if st.sidebar.button("Refresh Data", use_container_width=True):
+    if st.sidebar.button(t("refresh"), use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -190,15 +207,13 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     if meta:
         updated_at = meta.get("updated_at")
         if updated_at is not None:
-            # Convert to VN timezone
             if isinstance(updated_at, str):
                 updated_at = pd.to_datetime(updated_at)
             if updated_at.tzinfo is None:
                 updated_at = updated_at.tz_localize("UTC")
             vn_time = updated_at.astimezone(timezone(timedelta(hours=7)))
-            st.sidebar.caption(f"Cập nhật gần nhất:\n**{vn_time.strftime('%d/%m/%Y %H:%M')}** (VN)")
-        st.sidebar.caption(f"Rows: **{meta.get('row_count', 0):,}**")
-        st.sidebar.caption(f"Build: {meta.get('duration_sec', 0)}s")
+            st.sidebar.caption(f"{t('last_updated')}:\n**{vn_time.strftime('%d/%m/%Y %H:%M')}** (VN)")
+        st.sidebar.caption(f"{t('total_rows')}: **{meta.get('row_count', 0):,}**")
 
     st.sidebar.divider()
     st.sidebar.caption("Made with for Affina")
@@ -233,100 +248,29 @@ def apply_filters(df: pd.DataFrame, f: dict) -> pd.DataFrame:
 
 
 # ============================================================================
-# Formatting helpers
+
 # ============================================================================
-def _get_lang() -> str:
-    """Lấy ngôn ngữ hiện tại từ session_state."""
-    return st.session_state.get("_lang", "vi")
-
-
-def set_lang(lang: str) -> None:
-    """Set ngôn ngữ: 'vi' hoặc 'en'."""
-    st.session_state["_lang"] = lang
-
-
-# Bảng dịch ngắn gọn — thêm key khi cần
-_TRANSLATIONS = {
-    # ── Sidebar ──
-    "Bo loc chung":              {"vi": "Bo loc chung",              "en": "Filters"},
-    "Khoang thoi gian":          {"vi": "Khoang thoi gian",          "en": "Date range"},
-    "Loai bao hiem":             {"vi": "Loai bao hiem",             "en": "Insurance type"},
-    "Nha bao hiem":              {"vi": "Nha bao hiem",              "en": "Insurer"},
-    "Lam moi du lieu":           {"vi": "Lam moi du lieu",           "en": "Refresh Data"},
-    "Data cap nhat":             {"vi": "Data cap nhat",             "en": "Last updated"},
-    "Tong so dong":              {"vi": "Tong so dong",              "en": "Total rows"},
-    # ── KPI labels ──
-    "Doanh thu truoc thue":      {"vi": "Doanh thu truoc thue",      "en": "Pre-tax Revenue"},
-    "Tong thanh toan":           {"vi": "Tong thanh toan",           "en": "Total Payment"},
-    "So hop dong":               {"vi": "So hop dong",               "en": "Contracts"},
-    "Sale active":               {"vi": "Sale dang hoat dong",       "en": "Active Sales"},
-    "Affina Revenue":            {"vi": "Affina Revenue",            "en": "Affina Revenue"},
-    "EST Bonus":                 {"vi": "EST Bonus",                 "en": "EST Bonus"},
-    "Phi BH":                    {"vi": "Phi BH (Premium)",          "en": "Insurance Premium"},
-    "AVG DT / HD":               {"vi": "TB Doanh thu / HD",         "en": "Avg Revenue / Contract"},
-    # ── Section headers ──
-    "Chi so kinh doanh chinh":   {"vi": "Chi so kinh doanh chinh",   "en": "Key Business Metrics"},
-    "Xu huong & Co cau":         {"vi": "Xu huong & Co cau",         "en": "Trends & Structure"},
-    "30 ngay gan nhat":          {"vi": "30 ngay gan nhat",          "en": "Last 30 days"},
-    "Top 10":                    {"vi": "Top 10",                    "en": "Top 10"},
-    "Kham pha sau hon":          {"vi": "Kham pha sau hon",          "en": "Explore More"},
-    # ── Chart titles ──
-    "Doanh thu theo thang":      {"vi": "Doanh thu theo thang (chia theo Source)", "en": "Monthly Revenue (by Source)"},
-    "Co cau doanh thu":          {"vi": "Co cau doanh thu theo Source", "en": "Revenue Structure by Source"},
-    "Doanh thu / ngay":          {"vi": "Doanh thu / ngay",          "en": "Revenue / day"},
-    "So HD / ngay":              {"vi": "So HD / ngay",              "en": "Contracts / day"},
-    "Affina Revenue / ngay":     {"vi": "Affina Revenue / ngay",     "en": "Affina Revenue / day"},
-    "Tong 30 ngay":              {"vi": "Tong 30 ngay",              "en": "30-day Total"},
-    # ── Table headers ──
-    "Top 10 Sale theo DT":       {"vi": "Top 10 Sale theo Doanh thu","en": "Top 10 Sales by Revenue"},
-    "Top 10 Nha BH theo DT":     {"vi": "Top 10 Nha bao hiem theo Doanh thu", "en": "Top 10 Insurers by Revenue"},
-    # ── Buttons ──
-    "Tai CSV":                   {"vi": "Tai CSV (nhanh)",           "en": "Download CSV (fast)"},
-    "Tai Excel":                 {"vi": "Tai Excel (format dep)",    "en": "Download Excel (formatted)"},
-    "Tai xuong":                 {"vi": "Tai xuong",                 "en": "Download"},
-    # ── Pages ──
-    "Tong quan":                 {"vi": "Tong quan",                 "en": "Overview"},
-    "Kenh va San pham":          {"vi": "Kenh & San pham",           "en": "Channels & Products"},
-    "Doi ngu Sales":             {"vi": "Doi ngu Sales",             "en": "Sales Team"},
-    "Phan tich thoi gian":       {"vi": "Phan tich thoi gian",       "en": "Time Analysis"},
-    "Chi tiet va Export":        {"vi": "Chi tiet & Export",         "en": "Details & Export"},
-    "Head Sale Dashboard":       {"vi": "Head Sale Dashboard",       "en": "Head Sale Dashboard"},
-    "Executive Insights":        {"vi": "Executive Insights",        "en": "Executive Insights"},
-    "Customer Analytics":        {"vi": "Customer Analytics",        "en": "Customer Analytics"},
-    "Forecast va Anomaly":       {"vi": "Forecast & Anomaly",        "en": "Forecast & Anomaly"},
-    "KPI Competition":           {"vi": "KPI Competition",           "en": "KPI Competition"},
-    # ── Misc ──
-    "so ky truoc":               {"vi": "so ky truoc",               "en": "vs prev period"},
-    "Khong co du lieu":          {"vi": "Khong co du lieu phu hop voi bo loc hien tai.", "en": "No data matches the current filter."},
-}
-
-
-def t(key: str) -> str:
-    """Dịch 1 key sang ngôn ngữ hiện tại. Nếu không có key → trả về key gốc."""
-    lang = _get_lang()
-    entry = _TRANSLATIONS.get(key)
-    if entry:
-        return entry.get(lang, key)
-    return key
-
-
-def render_lang_toggle() -> None:
-    """Hiển thị nút chuyển ngôn ngữ ở sidebar với cờ quốc gia."""
-    lang = _get_lang()
-    st.sidebar.markdown("")
-    if lang == "vi":
-        st.sidebar.button(
-            "Switch to English  (EN)",
-            key="_lang_btn", use_container_width=True,
-            on_click=lambda: set_lang("en"),
-        )
-    else:
-        st.sidebar.button(
-            "Tieng Viet  (VI)",
-            key="_lang_btn", use_container_width=True,
-            on_click=lambda: set_lang("vi"),
-        )
-
+# Formatting helpers (i18n from lib/i18n.py)
+# ============================================================================
+def fmt_vnd(x, short: bool = False) -> str:
+    if pd.isna(x):
+        return "-"
+    x = float(x)
+    from lib.i18n import get_lang
+    lang = get_lang()
+    if short:
+        if lang == "vi":
+            units = [("nghìn tỷ", 1e12), ("tỷ", 1e9), ("tr", 1e6), ("k", 1e3)]
+        else:
+            units = [("T", 1e12), ("B", 1e9), ("M", 1e6), ("K", 1e3)]
+        for unit, div in units:
+            if abs(x) >= div:
+                val = x / div
+                if abs(val) < 10:   return f"{val:,.2f} {unit}"
+                elif abs(val) < 100: return f"{val:,.1f} {unit}"
+                else:                return f"{val:,.0f} {unit}"
+        return f"{x:,.0f}"
+    return f"{x:,.0f} ₫"
 
 def fmt_vnd(x, short: bool = False) -> str:
     if pd.isna(x):
