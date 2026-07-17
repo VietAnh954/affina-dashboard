@@ -81,13 +81,22 @@ button[data-baseweb="tab"] {
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# Header
+# Header với logo
 # ============================================================================
 st.markdown(
-    "<h1 style='margin-bottom:0;'>Affina Sales Dashboard</h1>"
-    "<p style='color:#7D5BA6; font-size:14px; margin-top:4px;'>"
-    "Tram viec da kho, Bao hiem co Affina lo &nbsp;|&nbsp; "
-    "Data tu dong cap nhat hang ngay luc 10h sang</p>",
+    """<div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
+        <div style="font-size:36px; font-weight:800; letter-spacing:4px;
+                    background: linear-gradient(135deg, #E85BD8, #8B6FC9);
+                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            AFFINA
+        </div>
+        <div>
+            <div style="font-size:22px; font-weight:700; color:#3D2B4F;">Sales Dashboard</div>
+            <div style="font-size:13px; color:#7D5BA6; margin-top:2px;">
+                Tram viec da kho, Bao hiem co Affina lo
+            </div>
+        </div>
+    </div>""",
     unsafe_allow_html=True,
 )
 

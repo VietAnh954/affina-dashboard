@@ -247,21 +247,57 @@ def set_lang(lang: str) -> None:
 
 # Bảng dịch ngắn gọn — thêm key khi cần
 _TRANSLATIONS = {
-    # Sidebar
-    "Bộ lọc chung":           {"vi": "Bộ lọc chung",           "en": "Filters"},
-    "Khoảng thời gian":       {"vi": "Khoảng thời gian",       "en": "Date range"},
-    "Source":                  {"vi": "Source",                  "en": "Source"},
-    "Channel":                 {"vi": "Channel",                 "en": "Channel"},
-    "Loại bảo hiểm":          {"vi": "Loại bảo hiểm",          "en": "Insurance type"},
-    "Nhà bảo hiểm":           {"vi": "Nhà bảo hiểm",           "en": "Insurer"},
-    "Refresh Data":            {"vi": "Làm mới dữ liệu",       "en": "Refresh Data"},
-    "Data cập nhật":           {"vi": "Data cập nhật",          "en": "Last updated"},
-    "Tổng số dòng":            {"vi": "Tổng số dòng",            "en": "Total rows"},
-    # KPI
-    "Doanh thu trước thuế":    {"vi": "Doanh thu trước thuế",    "en": "Pre-tax Revenue"},
-    "Tổng thanh toán":         {"vi": "Tổng thanh toán",         "en": "Total Payment"},
-    "Số hợp đồng":             {"vi": "Số hợp đồng",             "en": "Contracts"},
-    "Sale active":             {"vi": "Sale đang hoạt động",     "en": "Active Sales"},
+    # ── Sidebar ──
+    "Bo loc chung":              {"vi": "Bo loc chung",              "en": "Filters"},
+    "Khoang thoi gian":          {"vi": "Khoang thoi gian",          "en": "Date range"},
+    "Loai bao hiem":             {"vi": "Loai bao hiem",             "en": "Insurance type"},
+    "Nha bao hiem":              {"vi": "Nha bao hiem",              "en": "Insurer"},
+    "Lam moi du lieu":           {"vi": "Lam moi du lieu",           "en": "Refresh Data"},
+    "Data cap nhat":             {"vi": "Data cap nhat",             "en": "Last updated"},
+    "Tong so dong":              {"vi": "Tong so dong",              "en": "Total rows"},
+    # ── KPI labels ──
+    "Doanh thu truoc thue":      {"vi": "Doanh thu truoc thue",      "en": "Pre-tax Revenue"},
+    "Tong thanh toan":           {"vi": "Tong thanh toan",           "en": "Total Payment"},
+    "So hop dong":               {"vi": "So hop dong",               "en": "Contracts"},
+    "Sale active":               {"vi": "Sale dang hoat dong",       "en": "Active Sales"},
+    "Affina Revenue":            {"vi": "Affina Revenue",            "en": "Affina Revenue"},
+    "EST Bonus":                 {"vi": "EST Bonus",                 "en": "EST Bonus"},
+    "Phi BH":                    {"vi": "Phi BH (Premium)",          "en": "Insurance Premium"},
+    "AVG DT / HD":               {"vi": "TB Doanh thu / HD",         "en": "Avg Revenue / Contract"},
+    # ── Section headers ──
+    "Chi so kinh doanh chinh":   {"vi": "Chi so kinh doanh chinh",   "en": "Key Business Metrics"},
+    "Xu huong & Co cau":         {"vi": "Xu huong & Co cau",         "en": "Trends & Structure"},
+    "30 ngay gan nhat":          {"vi": "30 ngay gan nhat",          "en": "Last 30 days"},
+    "Top 10":                    {"vi": "Top 10",                    "en": "Top 10"},
+    "Kham pha sau hon":          {"vi": "Kham pha sau hon",          "en": "Explore More"},
+    # ── Chart titles ──
+    "Doanh thu theo thang":      {"vi": "Doanh thu theo thang (chia theo Source)", "en": "Monthly Revenue (by Source)"},
+    "Co cau doanh thu":          {"vi": "Co cau doanh thu theo Source", "en": "Revenue Structure by Source"},
+    "Doanh thu / ngay":          {"vi": "Doanh thu / ngay",          "en": "Revenue / day"},
+    "So HD / ngay":              {"vi": "So HD / ngay",              "en": "Contracts / day"},
+    "Affina Revenue / ngay":     {"vi": "Affina Revenue / ngay",     "en": "Affina Revenue / day"},
+    "Tong 30 ngay":              {"vi": "Tong 30 ngay",              "en": "30-day Total"},
+    # ── Table headers ──
+    "Top 10 Sale theo DT":       {"vi": "Top 10 Sale theo Doanh thu","en": "Top 10 Sales by Revenue"},
+    "Top 10 Nha BH theo DT":     {"vi": "Top 10 Nha bao hiem theo Doanh thu", "en": "Top 10 Insurers by Revenue"},
+    # ── Buttons ──
+    "Tai CSV":                   {"vi": "Tai CSV (nhanh)",           "en": "Download CSV (fast)"},
+    "Tai Excel":                 {"vi": "Tai Excel (format dep)",    "en": "Download Excel (formatted)"},
+    "Tai xuong":                 {"vi": "Tai xuong",                 "en": "Download"},
+    # ── Pages ──
+    "Tong quan":                 {"vi": "Tong quan",                 "en": "Overview"},
+    "Kenh va San pham":          {"vi": "Kenh & San pham",           "en": "Channels & Products"},
+    "Doi ngu Sales":             {"vi": "Doi ngu Sales",             "en": "Sales Team"},
+    "Phan tich thoi gian":       {"vi": "Phan tich thoi gian",       "en": "Time Analysis"},
+    "Chi tiet va Export":        {"vi": "Chi tiet & Export",         "en": "Details & Export"},
+    "Head Sale Dashboard":       {"vi": "Head Sale Dashboard",       "en": "Head Sale Dashboard"},
+    "Executive Insights":        {"vi": "Executive Insights",        "en": "Executive Insights"},
+    "Customer Analytics":        {"vi": "Customer Analytics",        "en": "Customer Analytics"},
+    "Forecast va Anomaly":       {"vi": "Forecast & Anomaly",        "en": "Forecast & Anomaly"},
+    "KPI Competition":           {"vi": "KPI Competition",           "en": "KPI Competition"},
+    # ── Misc ──
+    "so ky truoc":               {"vi": "so ky truoc",               "en": "vs prev period"},
+    "Khong co du lieu":          {"vi": "Khong co du lieu phu hop voi bo loc hien tai.", "en": "No data matches the current filter."},
 }
 
 
@@ -275,18 +311,21 @@ def t(key: str) -> str:
 
 
 def render_lang_toggle() -> None:
-    """Hiển thị nút chuyển ngôn ngữ ở sidebar."""
+    """Hiển thị nút chuyển ngôn ngữ ở sidebar với cờ quốc gia."""
     lang = _get_lang()
-    label = "EN | **VI**" if lang == "vi" else "**EN** | VI"
-    st.sidebar.markdown(f"Ngôn ngữ: {label}")
+    st.sidebar.markdown("")
     if lang == "vi":
-        if st.sidebar.button("Switch to English", key="_lang_btn", use_container_width=True):
-            set_lang("en")
-            st.rerun()
+        st.sidebar.button(
+            "Switch to English  (EN)",
+            key="_lang_btn", use_container_width=True,
+            on_click=lambda: set_lang("en"),
+        )
     else:
-        if st.sidebar.button("Chuyển sang Tiếng Việt", key="_lang_btn", use_container_width=True):
-            set_lang("vi")
-            st.rerun()
+        st.sidebar.button(
+            "Tieng Viet  (VI)",
+            key="_lang_btn", use_container_width=True,
+            on_click=lambda: set_lang("vi"),
+        )
 
 
 def fmt_vnd(x, short: bool = False) -> str:

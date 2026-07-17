@@ -510,7 +510,7 @@ with col_dl1:
             help="CSV nhẹ, mở nhanh. Không có format tiền/ngày đẹp như Excel.",
         )
 
-# Excel với format
+# Excel với format — NÚT HIỆN NGAY, generate khi user click
 with col_dl2:
     if selected_cols:
         if not HAS_OPENPYXL:
@@ -518,7 +518,6 @@ with col_dl2:
                 "Thiếu `openpyxl`. Thêm vào requirements.txt và deploy lại."
             )
         else:
-            # Generate Excel on-demand khi click
             filename_suffix = {
                 "single": "single",
                 "source": "by_source",
@@ -528,26 +527,33 @@ with col_dl2:
 
             file_label = f"affina_{filename_suffix}_{datetime.now():%Y%m%d_%H%M}.xlsx"
 
-            with st.spinner("Đang tạo file Excel với format đẹp..."):
-                try:
-                    excel_bytes = build_excel(
-                        df=df,
-                        columns=selected_cols,
-                        sheet_mode=sheet_mode,
-                        include_summary=include_summary,
-                        file_label=file_label,
-                    )
-                    st.download_button(
-                        f"Tải Excel (format đẹp — {len(selected_cols)} cột)",
-                        data=excel_bytes,
-                        file_name=file_label,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True,
-                        type="primary",
-                    )
-                    st.success(f"File Excel sẵn sàng! Kích thước thực: **{len(excel_bytes)/1024:.0f} KB**")
-                except Exception as e:
-                    st.error(f"Lỗi tạo Excel: {e}")
+            # Cache Excel bytes để không generate lại mỗi lần rerun
+            @st.cache_data(show_spinner="Dang tao file Excel...")
+            def _gen_excel(_df_hash, cols, mode, summary, label):
+                return build_excel(
+                    df=df,
+                    columns=cols,
+                    sheet_mode=mode,
+                    include_summary=summary,
+                    file_label=label,
+                )
+
+            try:
+                # Hash df để cache invalidate khi data đổi
+                df_hash = pd.util.hash_pandas_object(df[selected_cols].head(100)).sum()
+                excel_bytes = _gen_excel(
+                    df_hash, selected_cols, sheet_mode, include_summary, file_label
+                )
+                st.download_button(
+                    f"Tai Excel (format dep — {len(selected_cols)} cot)",
+                    data=excel_bytes,
+                    file_name=file_label,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    type="primary",
+                )
+            except Exception as e:
+                st.error(f"Loi tao Excel: {e}")
 
 st.divider()
 
