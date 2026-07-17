@@ -109,24 +109,36 @@ with right:
 st.divider()
 
 # ============================================================================
-# 2.4 Treemap: Nhà BH × Loại BH
+# 2.4 Nha BH x Loai BH — Grouped horizontal bar (thay treemap)
 # ============================================================================
-st.markdown("### Treemap: Nhà bảo hiểm × Loại BH")
-st.caption("Kích thước ô ∝ doanh thu. Màu ∝ Affina Revenue.")
+st.markdown("### Nha bao hiem — Doanh thu theo Loai BH")
+st.caption("Moi nhom = 1 nha BH, chia mau theo loai bao hiem. So sanh truc quan.")
 
 tm = df.groupby(["Nhà BH", "Loại bảo hiểm"], as_index=False).agg(
     DT=("Doanh thu trước thuế", "sum"),
-    AR=("Affina_Revenue", "sum"),
 )
 tm = tm[tm["DT"] > 0]
 if not tm.empty:
-    fig = px.treemap(
-        tm, path=["Nhà BH", "Loại bảo hiểm"], values="DT",
-        color="AR", color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
+    # Top 12 nha BH theo tong DT
+    top_nha = tm.groupby("Nhà BH")["DT"].sum().nlargest(12).index.tolist()
+    tm_top = tm[tm["Nhà BH"].isin(top_nha)]
+
+    fig = px.bar(
+        tm_top,
+        x="DT", y="Nhà BH", color="Loại bảo hiểm",
+        orientation="h",
+        color_discrete_map=COLORS,
+        text_auto=".2s",
+        labels={"DT": "Doanh thu (VND)", "Nhà BH": ""},
     )
-    fig.update_traces(hovertemplate="<b>%{label}</b><br>DT: %{value:,.0f} ₫<br>Affina: %{color:,.0f} ₫<extra></extra>",
-                      textinfo="label+value")
-    st.plotly_chart(apply_plotly_layout(fig, height=550), use_container_width=True)
+    fig.update_layout(
+        barmode="stack",
+        yaxis=dict(categoryorder="total ascending"),
+        legend=dict(title="Loai BH"),
+    )
+    fig.update_xaxes(tickformat=",")
+    st.plotly_chart(apply_plotly_layout(fig, height=max(400, 40 * len(top_nha))),
+                    use_container_width=True)
 else:
     empty_state()
 

@@ -112,7 +112,25 @@ def render_sidebar_filters(df: pd.DataFrame) -> dict:
     Render sidebar filters. Return dict of applied filters.
     Sidebar hiển thị chung cho mọi trang import và gọi từ mọi page.
     """
-    st.sidebar.markdown("### Bộ lọc chung")
+    # ── Logo + Slogan ──
+    st.sidebar.markdown(
+        """
+        <div style="text-align:center; padding: 8px 0 12px 0;">
+            <div style="font-size:28px; font-weight:800; letter-spacing:3px;
+                        background: linear-gradient(135deg, #E85BD8, #8B6FC9);
+                        -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                AFFINA
+            </div>
+            <div style="font-size:11px; color:#7D5BA6; letter-spacing:1px; margin-top:2px;">
+                Bao hiem &middot; Suc khoe &middot; Tai chinh
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.sidebar.divider()
+
+    st.sidebar.markdown("### Bo loc chung")
 
     # Date range
     date_min = df[DATE_COL].min()

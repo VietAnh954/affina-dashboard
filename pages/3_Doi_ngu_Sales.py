@@ -1,7 +1,7 @@
 """
-Trang 3 — Đội ngũ Sales
-Charts: Top 20 salesperson / BDM cards / BDD cards / Sankey CTVBDMBDD /
-        Scatter HĐ vs Doanh thu / Detail table
+Trang 3 — Doi ngu Sales
+Charts: Top 20 / BDM performance / BDD performance /
+        Hierarchy grouped bar (thay Sankey) / Scatter / Detail table
 """
 import pandas as pd
 import plotly.express as px
@@ -14,17 +14,17 @@ from lib.data import (
     load_master_data, render_sidebar_filters,
 )
 
-st.set_page_config(page_title="Đội ngũ Sales", layout="wide")
+st.set_page_config(page_title="Doi ngu Sales", layout="wide")
 
 from lib.auth import require_auth
-require_auth("sales", "Đội ngũ Sales")
+require_auth("sales", "Doi ngu Sales")
 
-st.title("Đội ngũ Sales")
-st.caption("Ranking sale, hiệu suất BDM/BDD, phát hiện star performer.")
+st.title("Doi ngu Sales")
+st.caption("Ranking sale, hieu suat BDM/BDD, phat hien star performer.")
 
 df_raw = load_master_data()
 if df_raw.empty:
-    empty_state("Chưa có data.")
+    empty_state("Chua co data.")
     st.stop()
 
 filters = render_sidebar_filters(df_raw)
@@ -53,20 +53,20 @@ if "Họ tên sale" in df.columns:
             hover_data={"So_HD": ":,", "EST_Bonus": ":,"},
             text_auto=".2s",
         )
-        fig.update_xaxes(title="Doanh thu (VNĐ)", tickformat=",")
+        fig.update_xaxes(title="Doanh thu (VND)", tickformat=",")
         fig.update_yaxes(title="")
         st.plotly_chart(apply_plotly_layout(fig, height=650), use_container_width=True)
     else:
         empty_state()
 else:
-    st.warning("Không có cột `Họ tên sale`")
+    st.warning("Khong co cot `Ho ten sale`")
 
 st.divider()
 
 # ============================================================================
-# 3.2 BDM Performance cards
+# 3.2 BDM Performance
 # ============================================================================
-st.markdown("### Hiệu suất BDM (Quản lý cấp 1)")
+st.markdown("### Hieu suat BDM (Quan ly cap 1)")
 
 if "QUẢN LÝ CẤP 1 (BDM)" in df.columns:
     df_bdm = df[df["QUẢN LÝ CẤP 1 (BDM)"].notna() & (df["QUẢN LÝ CẤP 1 (BDM)"] != "")]
@@ -77,14 +77,14 @@ if "QUẢN LÝ CẤP 1 (BDM)" in df.columns:
                             Affina_Rev=("Affina_Revenue", "sum"))
                        .sort_values("Doanh_thu", ascending=False))
     if not bdm_perf.empty:
-        # Show as bar chart + table
         fig = px.bar(
             bdm_perf.head(15), x="QUẢN LÝ CẤP 1 (BDM)", y="Doanh_thu",
-            color="Doanh_thu", color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
+            color="Doanh_thu",
+            color_continuous_scale=["#FDF2FB", "#F0AEE2", "#D06DC4", "#A6409E", "#7D2E78"],
             hover_data={"So_sale": True, "So_HD": ":,"},
         )
         fig.update_xaxes(tickangle=-40, title="")
-        fig.update_yaxes(title="Doanh thu (VNĐ)", tickformat=",")
+        fig.update_yaxes(title="Doanh thu (VND)", tickformat=",")
         fig.update_layout(coloraxis_showscale=False)
         st.plotly_chart(apply_plotly_layout(fig, height=400), use_container_width=True)
 
@@ -92,25 +92,24 @@ if "QUẢN LÝ CẤP 1 (BDM)" in df.columns:
             bdm_perf,
             column_config={
                 "QUẢN LÝ CẤP 1 (BDM)": "BDM",
-                "Doanh_thu": st.column_config.NumberColumn("Doanh thu", format="%.0f ₫"),
-                "So_sale": st.column_config.NumberColumn("Số sale", format="%d"),
-                "So_HD": st.column_config.NumberColumn("Số HĐ", format="%d"),
-                "Affina_Rev": st.column_config.NumberColumn("Affina Rev", format="%.0f ₫"),
+                "Doanh_thu": st.column_config.NumberColumn("Doanh thu", format="%.0f"),
+                "So_sale": st.column_config.NumberColumn("So sale", format="%d"),
+                "So_HD": st.column_config.NumberColumn("So HD", format="%d"),
+                "Affina_Rev": st.column_config.NumberColumn("Affina Rev", format="%.0f"),
             },
-            hide_index=True,
-            use_container_width=True,
+            hide_index=True, use_container_width=True,
         )
     else:
-        empty_state("Không có data BDM")
+        empty_state("Khong co data BDM")
 else:
-    st.info("Không có cột BDM")
+    st.info("Khong co cot BDM")
 
 st.divider()
 
 # ============================================================================
 # 3.3 BDD Performance
 # ============================================================================
-st.markdown("### Hiệu suất BDD (Quản lý cấp 2)")
+st.markdown("### Hieu suat BDD (Quan ly cap 2)")
 
 if "QUẢN LÝ CẤP 2 (BDD)" in df.columns:
     df_bdd = df[df["QUẢN LÝ CẤP 2 (BDD)"].notna() & (df["QUẢN LÝ CẤP 2 (BDD)"] != "")]
@@ -123,10 +122,11 @@ if "QUẢN LÝ CẤP 2 (BDD)" in df.columns:
     if not bdd_perf.empty:
         fig = px.bar(
             bdd_perf.head(10), x="QUẢN LÝ CẤP 2 (BDD)", y="Doanh_thu",
-            color="Doanh_thu", color_continuous_scale=["#FDF2FB", "#E8C1F0", "#C77BC9", "#9B4FAE", "#6B3A8E"],
+            color="Doanh_thu",
+            color_continuous_scale=["#FDF2FB", "#E8C1F0", "#C77BC9", "#9B4FAE", "#6B3A8E"],
         )
         fig.update_xaxes(tickangle=-40, title="")
-        fig.update_yaxes(title="Doanh thu (VNĐ)", tickformat=",")
+        fig.update_yaxes(title="Doanh thu (VND)", tickformat=",")
         fig.update_layout(coloraxis_showscale=False)
         st.plotly_chart(apply_plotly_layout(fig, height=400), use_container_width=True)
 
@@ -134,81 +134,103 @@ if "QUẢN LÝ CẤP 2 (BDD)" in df.columns:
             bdd_perf,
             column_config={
                 "QUẢN LÝ CẤP 2 (BDD)": "BDD",
-                "Doanh_thu": st.column_config.NumberColumn("Doanh thu", format="%.0f ₫"),
-                "So_BDM": st.column_config.NumberColumn("Số BDM", format="%d"),
-                "So_sale": st.column_config.NumberColumn("Số sale", format="%d"),
-                "So_HD": st.column_config.NumberColumn("Số HĐ", format="%d"),
+                "Doanh_thu": st.column_config.NumberColumn("Doanh thu", format="%.0f"),
+                "So_BDM": st.column_config.NumberColumn("So BDM", format="%d"),
+                "So_sale": st.column_config.NumberColumn("So sale", format="%d"),
+                "So_HD": st.column_config.NumberColumn("So HD", format="%d"),
             },
-            hide_index=True,
-            use_container_width=True,
+            hide_index=True, use_container_width=True,
         )
     else:
-        empty_state("Không có data BDD")
+        empty_state("Khong co data BDD")
 else:
-    st.info("Không có cột BDD")
+    st.info("Khong co cot BDD")
 
 st.divider()
 
 # ============================================================================
-# 3.4 Sankey: Sale BDM BDD
+# 3.4 THAY SANKEY => Grouped bar: BDD > BDM > top sale (hierarchy)
 # ============================================================================
-st.markdown("### Sankey: CTV BDM BDD (top 30 dòng chảy)")
-st.caption("Chiều rộng luồng ∝ doanh thu. Hover để xem chi tiết.")
+st.markdown("### Cau truc nhanh: BDD — BDM — So sale & Doanh thu")
+st.caption("Moi bar = 1 BDM, nhom theo BDD. So sanh quy mo nhanh giua cac BDD.")
 
-sk = df[df["QUẢN LÝ CẤP 1 (BDM)"].notna() & df["QUẢN LÝ CẤP 2 (BDD)"].notna() & df["Họ tên sale"].notna()].copy()
+has_bdd = "QUẢN LÝ CẤP 2 (BDD)" in df.columns
+has_bdm = "QUẢN LÝ CẤP 1 (BDM)" in df.columns
 
-if not sk.empty:
-    # Aggregate: từ Sale BDM
-    flow_sale_bdm = (sk.groupby(["Họ tên sale", "QUẢN LÝ CẤP 1 (BDM)"], as_index=False)
-                       ["Doanh thu trước thuế"].sum())
-    flow_sale_bdm = flow_sale_bdm.nlargest(30, "Doanh thu trước thuế")
+if has_bdd and has_bdm:
+    hier = (df[df["QUẢN LÝ CẤP 2 (BDD)"].notna() & df["QUẢN LÝ CẤP 1 (BDM)"].notna()]
+              .groupby(["QUẢN LÝ CẤP 2 (BDD)", "QUẢN LÝ CẤP 1 (BDM)"], as_index=False)
+              .agg(doanh_thu=("Doanh thu trước thuế", "sum"),
+                   so_sale=("Họ tên sale", "nunique"),
+                   so_hd=("Số hợp đồng", "nunique")))
+    hier = hier[hier["doanh_thu"] > 0]
 
-    # BDM BDD
-    flow_bdm_bdd = (sk.groupby(["QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)"], as_index=False)
-                      ["Doanh thu trước thuế"].sum())
+    if not hier.empty:
+        # Tab: bar doanh thu vs bar số sale
+        tab_rev, tab_sale = st.tabs(["Doanh thu theo nhanh", "So sale theo nhanh"])
 
-    # Node list
-    nodes = list(pd.unique(pd.concat([
-        flow_sale_bdm["Họ tên sale"],
-        flow_sale_bdm["QUẢN LÝ CẤP 1 (BDM)"],
-        flow_bdm_bdd["QUẢN LÝ CẤP 1 (BDM)"],
-        flow_bdm_bdd["QUẢN LÝ CẤP 2 (BDD)"],
-    ])))
-    node_idx = {n: i for i, n in enumerate(nodes)}
+        with tab_rev:
+            fig = px.bar(
+                hier.sort_values("doanh_thu", ascending=True),
+                x="doanh_thu",
+                y="QUẢN LÝ CẤP 1 (BDM)",
+                color="QUẢN LÝ CẤP 2 (BDD)",
+                orientation="h",
+                text_auto=".2s",
+                hover_data={"so_sale": True, "so_hd": True},
+                labels={"doanh_thu": "Doanh thu (VND)", "QUẢN LÝ CẤP 1 (BDM)": "BDM"},
+            )
+            fig.update_layout(
+                barmode="group",
+                yaxis=dict(categoryorder="total ascending"),
+                legend=dict(title="BDD"),
+            )
+            fig.update_xaxes(tickformat=",")
+            st.plotly_chart(apply_plotly_layout(fig, height=max(400, 30 * len(hier))),
+                            use_container_width=True)
 
-    source_i, target_i, value_i = [], [], []
-    for _, r in flow_sale_bdm.iterrows():
-        source_i.append(node_idx[r["Họ tên sale"]])
-        target_i.append(node_idx[r["QUẢN LÝ CẤP 1 (BDM)"]])
-        value_i.append(r["Doanh thu trước thuế"])
-    for _, r in flow_bdm_bdd.iterrows():
-        if r["QUẢN LÝ CẤP 1 (BDM)"] not in flow_sale_bdm["QUẢN LÝ CẤP 1 (BDM)"].values:
-            continue
-        source_i.append(node_idx[r["QUẢN LÝ CẤP 1 (BDM)"]])
-        target_i.append(node_idx[r["QUẢN LÝ CẤP 2 (BDD)"]])
-        value_i.append(r["Doanh thu trước thuế"])
+        with tab_sale:
+            fig2 = px.bar(
+                hier.sort_values("so_sale", ascending=True),
+                x="so_sale",
+                y="QUẢN LÝ CẤP 1 (BDM)",
+                color="QUẢN LÝ CẤP 2 (BDD)",
+                orientation="h",
+                text_auto=True,
+                labels={"so_sale": "So sale active", "QUẢN LÝ CẤP 1 (BDM)": "BDM"},
+            )
+            fig2.update_layout(
+                barmode="group",
+                yaxis=dict(categoryorder="total ascending"),
+                legend=dict(title="BDD"),
+            )
+            st.plotly_chart(apply_plotly_layout(fig2, height=max(400, 30 * len(hier))),
+                            use_container_width=True)
 
-    fig = go.Figure(data=[go.Sankey(
-        node=dict(
-            pad=15, thickness=18,
-            line=dict(color="black", width=0.5),
-            label=nodes,
-        ),
-        link=dict(source=source_i, target=target_i, value=value_i,
-                  hovertemplate="Từ %{source.label} %{target.label}<br>DT: %{value:,.0f} ₫<extra></extra>"),
-    )])
-    fig.update_layout(font=dict(size=11), height=600)
-    st.plotly_chart(fig, use_container_width=True)
+        # Summary table nhanh
+        bdd_summary = (hier.groupby("QUẢN LÝ CẤP 2 (BDD)")
+                           .agg(n_bdm=("QUẢN LÝ CẤP 1 (BDM)", "nunique"),
+                                total_sale=("so_sale", "sum"),
+                                total_dt=("doanh_thu", "sum"))
+                           .sort_values("total_dt", ascending=False)
+                           .reset_index())
+        bdd_summary["DT/Sale"] = (bdd_summary["total_dt"] / bdd_summary["total_sale"].clip(lower=1)).round(0)
+        bdd_summary.columns = ["BDD", "So BDM", "So Sale", "Tong DT", "DT trung binh / Sale"]
+        bdd_summary["Tong DT"] = bdd_summary["Tong DT"].apply(lambda v: fmt_vnd(v, short=True))
+        bdd_summary["DT trung binh / Sale"] = bdd_summary["DT trung binh / Sale"].apply(lambda v: fmt_vnd(v, short=True))
+        st.dataframe(bdd_summary, hide_index=True, use_container_width=True)
+    else:
+        empty_state("Khong co du lieu hierarchy BDD-BDM.")
 else:
-    empty_state("Chưa có luồng CTVBDMBDD hợp lệ trong bộ lọc.")
+    st.info("Can ca 2 cot BDM va BDD de ve bieu do nay.")
 
 st.divider()
 
 # ============================================================================
-# 3.5 Scatter — HĐ vs Doanh thu (mỗi điểm = 1 sale)
+# 3.5 Scatter — HD vs Doanh thu
 # ============================================================================
-st.markdown("### Scatter: Số HĐ × Doanh thu / Sale")
-st.caption("Góc phải-trên = star performer. Kích thước bubble = Affina Revenue.")
+st.markdown("### Scatter: So HD x Doanh thu / Sale")
+st.caption("Goc phai-tren = star performer. Kich thuoc = Affina Revenue.")
 
 scatter_df = (df.groupby(["Họ tên sale", "Chức danh"], as_index=False)
                 .agg(So_HD=("Số hợp đồng", "nunique"),
@@ -226,8 +248,8 @@ if not scatter_df.empty:
                     "So_HD": ":,", "Doanh_thu": ":,", "Affina": ":,"},
         size_max=40, opacity=0.75,
     )
-    fig.update_xaxes(title="Số HĐ", tickformat=",")
-    fig.update_yaxes(title="Doanh thu (VNĐ)", tickformat=",")
+    fig.update_xaxes(title="So HD", tickformat=",")
+    fig.update_yaxes(title="Doanh thu (VND)", tickformat=",")
     st.plotly_chart(apply_plotly_layout(fig, height=550), use_container_width=True)
 else:
     empty_state()
@@ -235,9 +257,9 @@ else:
 st.divider()
 
 # ============================================================================
-# 3.6 Full detail table (with search + download)
+# 3.6 Detail table
 # ============================================================================
-st.markdown("### Bảng chi tiết toàn bộ Sales")
+st.markdown("### Bang chi tiet toan bo Sales")
 
 detail = (df.groupby(["Họ tên sale", "Chức danh",
                       "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)"], as_index=False, dropna=False)
@@ -253,20 +275,13 @@ st.dataframe(
     column_config={
         "QUẢN LÝ CẤP 1 (BDM)": "BDM",
         "QUẢN LÝ CẤP 2 (BDD)": "BDD",
-        "Doanh_thu": st.column_config.NumberColumn("Doanh thu", format="%.0f ₫"),
-        "EST_Bonus": st.column_config.NumberColumn("EST Bonus", format="%.0f ₫"),
-        "Affina": st.column_config.NumberColumn("Affina Rev", format="%.0f ₫"),
-        "So_HD": st.column_config.NumberColumn("Số HĐ", format="%d"),
+        "Doanh_thu": st.column_config.NumberColumn("Doanh thu", format="%.0f"),
+        "EST_Bonus": st.column_config.NumberColumn("EST Bonus", format="%.0f"),
+        "Affina": st.column_config.NumberColumn("Affina Rev", format="%.0f"),
+        "So_HD": st.column_config.NumberColumn("So HD", format="%d"),
     },
-    hide_index=True,
-    use_container_width=True,
-    height=500,
+    hide_index=True, use_container_width=True, height=500,
 )
 
 csv = detail.to_csv(index=False).encode("utf-8-sig")
-st.download_button(
-    label="Tải xuống CSV",
-    data=csv,
-    file_name="affina_sales_ranking.csv",
-    mime="text/csv",
-)
+st.download_button("Tai xuong CSV", data=csv, file_name="affina_sales_ranking.csv", mime="text/csv")

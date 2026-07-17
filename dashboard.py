@@ -36,16 +36,59 @@ st.set_page_config(
 )
 
 from lib.auth import require_auth
-require_auth("home", "Tổng quan")
+require_auth("home", "Tong quan")
 
+# ── Global CSS polish ──
+st.markdown("""
+<style>
+/* KPI metric cards — border nhẹ + shadow */
+[data-testid="stMetric"] {
+    background: rgba(232, 91, 216, 0.04);
+    border: 1px solid rgba(232, 91, 216, 0.12);
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: transform 0.15s;
+}
+[data-testid="stMetric"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(180, 75, 200, 0.1);
+}
+/* Metric value size */
+[data-testid="stMetricValue"] {
+    font-size: 1.3rem !important;
+}
+/* Tabs style */
+button[data-baseweb="tab"] {
+    font-weight: 600;
+}
+/* Dataframe header */
+[data-testid="stDataFrame"] thead th {
+    background-color: rgba(125, 46, 120, 0.08) !important;
+}
+/* Download button brand color */
+[data-testid="stDownloadButton"] button {
+    border-color: #E85BD8 !important;
+}
+/* Plotly chart container — slight padding */
+[data-testid="stPlotlyChart"] {
+    border-radius: 8px;
+}
+/* Sidebar width */
+[data-testid="stSidebar"] {
+    min-width: 280px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================================================
 # Header
 # ============================================================================
-st.title("Affina Sales Dashboard — Tổng quan")
-st.caption(
-    "Bức tranh tổng thể doanh thu, sản phẩm, kênh, đội ngũ sale. "
-    "Data tự động cập nhật hàng ngày lúc 10h sáng."
+st.markdown(
+    "<h1 style='margin-bottom:0;'>Affina Sales Dashboard</h1>"
+    "<p style='color:#7D5BA6; font-size:14px; margin-top:4px;'>"
+    "Tram viec da kho, Bao hiem co Affina lo &nbsp;|&nbsp; "
+    "Data tu dong cap nhat hang ngay luc 10h sang</p>",
+    unsafe_allow_html=True,
 )
 
 # ============================================================================
