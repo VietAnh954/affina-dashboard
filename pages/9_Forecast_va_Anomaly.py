@@ -35,6 +35,10 @@ st.set_page_config(page_title="Forecast & Anomaly", layout="wide")
 from lib.auth import require_auth
 require_auth("forecast", "Forecast & Anomaly")
 
+from lib.theme import inject_css
+inject_css()
+
+
 
 # Try import statsmodels
 try:

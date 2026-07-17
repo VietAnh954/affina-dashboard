@@ -29,6 +29,10 @@ st.set_page_config(page_title="Chi tiết & Export", layout="wide")
 from lib.auth import require_auth
 require_auth("export", "Chi tiết & Export")
 
+from lib.theme import inject_css
+inject_css()
+
+
 
 # ============================================================================
 # EXCEL FORMATTING

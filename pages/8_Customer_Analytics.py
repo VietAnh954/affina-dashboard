@@ -37,6 +37,10 @@ st.set_page_config(page_title="Customer Analytics", layout="wide")
 from lib.auth import require_auth
 require_auth("customer", "Customer Analytics")
 
+from lib.theme import inject_css
+inject_css()
+
+
 
 
 # ============================================================================

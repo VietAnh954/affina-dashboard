@@ -39,47 +39,11 @@ st.set_page_config(
 from lib.auth import require_auth
 require_auth("home", "Tong quan")
 
-# ── Global CSS polish ──
-st.markdown("""
-<style>
-/* KPI metric cards — border nhẹ + shadow */
-[data-testid="stMetric"] {
-    background: rgba(232, 91, 216, 0.04);
-    border: 1px solid rgba(232, 91, 216, 0.12);
-    border-radius: 10px;
-    padding: 12px 16px;
-    transition: transform 0.15s;
-}
-[data-testid="stMetric"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(180, 75, 200, 0.1);
-}
-/* Metric value size */
-[data-testid="stMetricValue"] {
-    font-size: 1.3rem !important;
-}
-/* Tabs style */
-button[data-baseweb="tab"] {
-    font-weight: 600;
-}
-/* Dataframe header */
-[data-testid="stDataFrame"] thead th {
-    background-color: rgba(125, 46, 120, 0.08) !important;
-}
-/* Download button brand color */
-[data-testid="stDownloadButton"] button {
-    border-color: #E85BD8 !important;
-}
-/* Plotly chart container — slight padding */
-[data-testid="stPlotlyChart"] {
-    border-radius: 8px;
-}
-/* Sidebar width */
-[data-testid="stSidebar"] {
-    min-width: 280px;
-}
-</style>
-""", unsafe_allow_html=True)
+from lib.theme import inject_css
+inject_css()
+
+
+# CSS injected via lib/theme.py inject_css() above
 
 # ============================================================================
 # Header với logo

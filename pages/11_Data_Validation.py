@@ -19,6 +19,10 @@ st.set_page_config(page_title="Data Validation", layout="wide")
 from lib.auth import require_auth
 require_auth("home", "Data Validation")
 
+from lib.theme import inject_css
+inject_css()
+
+
 
 # ============================================================================
 # HELPERS

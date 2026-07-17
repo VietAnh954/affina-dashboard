@@ -19,6 +19,10 @@ st.set_page_config(page_title="Doi ngu Sales", layout="wide")
 from lib.auth import require_auth
 require_auth("sales", "Doi ngu Sales")
 
+from lib.theme import inject_css
+inject_css()
+
+
 st.title("Doi ngu Sales")
 st.caption("Ranking sale, hieu suat BDM/BDD, phat hien star performer.")
 
