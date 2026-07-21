@@ -95,13 +95,15 @@ def _validate_env() -> None:
 # 2. GOOGLE DRIVE HELPERS (OAuth Refresh Token — không dùng Service Account)
 # ============================================================================
 def get_drive_service():
+    # KHÔNG truyền scopes= vào Credentials khi dùng refresh token.
+    # Nếu truyền scopes khác với scope lúc TẠO token → Google trả invalid_scope.
+    # Bỏ scopes → Google tự dùng đúng scope gốc gắn với refresh token.
     creds = Credentials(
         token=None,
         refresh_token=GOOGLE_REFRESH_TOKEN,
         client_id=GOOGLE_CLIENT_ID,
         client_secret=GOOGLE_CLIENT_SECRET,
         token_uri="https://oauth2.googleapis.com/token",
-        scopes=SCOPES,
     )
     creds.refresh(Request())
     return build("drive", "v3", credentials=creds)
