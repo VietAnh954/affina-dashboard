@@ -49,7 +49,7 @@ inject_css()
 # Header với logo
 # ============================================================================
 st.markdown(
-    """<div style="display:flex; align-items:center; gap:16px; margin-top:16px; margin-bottom:8px;">
+    """<div style="display:flex; align-items:center; gap:16px; margin-top:28px; margin-bottom:8px;">
         <div style="font-size:36px; font-weight:800; letter-spacing:4px; line-height:1.4;
                     color:#E85BD8;
                     background: linear-gradient(135deg, #E85BD8, #8B6FC9);
