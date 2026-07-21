@@ -101,6 +101,7 @@ def get_drive_service():
         client_id=GOOGLE_CLIENT_ID,
         client_secret=GOOGLE_CLIENT_SECRET,
         token_uri="https://oauth2.googleapis.com/token",
+        scopes=SCOPES,
     )
     creds.refresh(Request())
     return build("drive", "v3", credentials=creds)
@@ -502,11 +503,11 @@ def clean_data(sheet_io, dsns_io, qd_io):
 def push_sources_to_supabase(engine, df_ns, qd1, df_union):
     log("[Step 4] Đang push 3 bảng nguồn lên Supabase...")
     try:
-        qd1.to_sql("qd1", con=engine, if_exists="replace", index=False)
+        _push_with_retry(engine, qd1, "qd1")
         log("  [OK] qd1")
-        df_ns.to_sql("ds_nhan_su_affina", con=engine, if_exists="replace", index=False)
+        _push_with_retry(engine, df_ns, "ds_nhan_su_affina")
         log("  [OK] ds_nhan_su_affina")
-        df_union.to_sql("union_all_data_cap_don", con=engine, if_exists="replace", index=False)
+        _push_with_retry(engine, df_union, "union_all_data_cap_don")
         log("  [OK] union_all_data_cap_don")
     except Exception as e:
         log(f"  [WARN] Push Supabase lỗi (không blocking): {e}")
@@ -817,6 +818,55 @@ def combine_master(df_core, df_neo, df_tsa):
 # ============================================================================
 # 8. PUSH DASHBOARD_MASTER_DATA + META LÊN SUPABASE
 # ============================================================================
+def _push_with_retry(engine, df, table_name, max_retries=3):
+    """Push DataFrame lên Supabase với chunksize nhỏ + retry khi connection drop.
+
+    Supabase pooler (pgbouncer) drop connection khi statement quá lớn.
+    Giải pháp: chunksize=200, method="multi" giới hạn ~13k params/statement,
+    retry tối đa 3 lần với chunksize giảm dần nếu vẫn fail.
+    """
+    import time
+
+    chunk_sizes = [200, 100, 50]  # thử giảm dần nếu fail
+    last_err = None
+
+    for attempt, chunk in enumerate(chunk_sizes[:max_retries], 1):
+        try:
+            df.to_sql(
+                table_name,
+                con=engine,
+                if_exists="replace",
+                index=False,
+                chunksize=chunk,
+                method="multi",
+            )
+            return  # thành công
+        except Exception as e:
+            last_err = e
+            log(f"  [RETRY {attempt}/{max_retries}] Push fail với chunksize={chunk}: {type(e).__name__}")
+            log(f"           Thử lại sau 5s với chunksize nhỏ hơn...")
+            time.sleep(5)
+            # Dispose engine pool để lấy connection mới
+            engine.dispose()
+
+    # Hết retry — thử phương án cuối: method=None (executemany, chậm nhưng bền)
+    log("  [FINAL] Thử method=None (chậm hơn nhưng ổn định)...")
+    try:
+        df.to_sql(
+            table_name,
+            con=engine,
+            if_exists="replace",
+            index=False,
+            chunksize=500,
+            method=None,
+        )
+        return
+    except Exception as e:
+        log(f"  [FATAL] Push thất bại hoàn toàn: {e}")
+        raise last_err or e
+
+
+# ============================================================================
 def push_dashboard_data(engine, df_master, df_core, df_neo, df_tsa, duration_sec):
     log("[Step 7] Đang push dashboard_master_data lên Supabase...")
 
@@ -825,14 +875,10 @@ def push_dashboard_data(engine, df_master, df_core, df_neo, df_tsa, duration_sec
     # -> giữ nguyên tên cột tiếng Việt cho dashboard dễ hiểu.
 
     # Ghi đè full (replace) — vì dashboard cần snapshot mới hoàn toàn
-    df_master.to_sql(
-        "dashboard_master_data",
-        con=engine,
-        if_exists="replace",
-        index=False,
-        chunksize=1000,
-        method="multi",
-    )
+    # LƯU Ý: chunksize phải NHỎ (200) vì bảng có 65 cột.
+    # chunksize=1000 × 65 cột = 65,000 params/statement → Supabase pooler drop connection.
+    # method=None (executemany từng dòng theo chunk) ổn định hơn method="multi" với pooler.
+    _push_with_retry(engine, df_master, "dashboard_master_data")
     log(f"  [OK] Đã push {len(df_master)} dòng vào dashboard_master_data")
 
     # Meta
@@ -891,7 +937,7 @@ def main():
     sheet_io, dsns_io, qd_io = load_all_sources(drive_service)
     df_ns, qd1, df_union = clean_data(sheet_io, dsns_io, qd_io)
 
-    engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True)
+    engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 30, "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5})
 
     push_sources_to_supabase(engine, df_ns, qd1, df_union)
 
@@ -916,7 +962,7 @@ if __name__ == "__main__":
         log(f"[FATAL] {type(e).__name__}: {e}")
         if SUPABASE_DB_URI:
             try:
-                engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True)
+                engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 30, "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5})
                 with engine.begin() as conn:
                     conn.execute(text("""
                         CREATE TABLE IF NOT EXISTS dashboard_meta (
