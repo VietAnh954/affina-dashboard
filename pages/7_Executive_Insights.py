@@ -41,10 +41,9 @@ st.set_page_config(page_title="Executive Insights", layout="wide")
 from lib.auth import require_auth
 require_auth("executive", "Executive Insights")
 
-from lib.theme import inject_css
+from lib.theme import inject_css, render_header
 inject_css()
-
-
+render_header()
 
 # Try import scipy - graceful degradation nếu không có
 try:

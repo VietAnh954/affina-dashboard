@@ -39,9 +39,9 @@ st.set_page_config(page_title="KPI Competition", layout="wide")
 # ── Auth ──
 require_auth("kpi", "KPI Competition — CLB Tinh Hoa Affina")
 
-from lib.theme import inject_css
+from lib.theme import inject_css, render_header
 inject_css()
-
+render_header()
 
 # Theme: dùng chung hồng pastel với các trang khác (dark theme đã bỏ)
 

@@ -8,6 +8,27 @@ def inject_css():
     """Inject professional CSS vào page hiện tại. Gọi 1 lần/page."""
     st.markdown(_CSS, unsafe_allow_html=True)
 
+
+def render_header():
+    st.markdown(
+        """<div style="display:flex; align-items:center; gap:16px; margin-top:28px; margin-bottom:8px;">
+            <div style="font-size:36px; font-weight:800; letter-spacing:4px; line-height:1.4;
+                        color:#E85BD8;
+                        background: linear-gradient(135deg, #E85BD8, #8B6FC9);
+                        -webkit-background-clip: text; background-clip: text;
+                        -webkit-text-fill-color: transparent;">
+                AFFINA
+            </div>
+            <div>
+                <div style="font-size:22px; font-weight:700; color:#3D2B4F; line-height:1.4;">Sales Dashboard</div>
+                <div style="font-size:13px; color:#7D5BA6; margin-top:2px; line-height:1.4;">
+                    Tram viec da kho, Bao hiem co Affina lo
+                </div>
+            </div>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+
 _CSS = """
 <style>
 /* ================================================================

@@ -44,10 +44,9 @@ st.set_page_config(page_title="Head Sale Dashboard", layout="wide")
 from lib.auth import require_auth
 require_auth("headsale", "Head Sale Dashboard")
 
-from lib.theme import inject_css
+from lib.theme import inject_css, render_header
 inject_css()
-
-
+render_header()
 
 # Danh sách Head Sale (thêm/bớt trong tương lai — chỉ sửa dict này)
 HEAD_SALES = {

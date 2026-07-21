@@ -19,9 +19,9 @@ st.set_page_config(page_title="Kênh & Sản phẩm", layout="wide")
 from lib.auth import require_auth
 require_auth("kenh", "Kênh & Sản phẩm")
 
-from lib.theme import inject_css
+from lib.theme import inject_css, render_header
 inject_css()
-
+render_header()
 
 st.title("Kênh & Sản phẩm")
 st.caption("Phân tích mix sản phẩm, kênh nào bán tốt, nhà bảo hiểm nào là chủ lực.")
