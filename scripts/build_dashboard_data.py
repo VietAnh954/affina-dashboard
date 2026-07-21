@@ -820,16 +820,11 @@ def combine_master(df_core, df_neo, df_tsa):
 # ============================================================================
 # 8. PUSH DASHBOARD_MASTER_DATA + META LÊN SUPABASE
 # ============================================================================
-def _push_with_retry(engine, df, table_name, max_retries=3):
-    """Push DataFrame lên Supabase với chunksize nhỏ + retry khi connection drop.
-
-    Supabase pooler (pgbouncer) drop connection khi statement quá lớn.
-    Giải pháp: chunksize=200, method="multi" giới hạn ~13k params/statement,
-    retry tối đa 3 lần với chunksize giảm dần nếu vẫn fail.
-    """
+def _push_with_retry(engine, df, table_name, schema="dashboard", max_retries=3):
+    """Push DataFrame lên Supabase với chunksize nhỏ + retry khi connection drop."""
     import time
 
-    chunk_sizes = [200, 100, 50]  # thử giảm dần nếu fail
+    chunk_sizes = [200, 100, 50]
     last_err = None
 
     for attempt, chunk in enumerate(chunk_sizes[:max_retries], 1):
@@ -837,26 +832,26 @@ def _push_with_retry(engine, df, table_name, max_retries=3):
             df.to_sql(
                 table_name,
                 con=engine,
+                schema=schema,
                 if_exists="replace",
                 index=False,
                 chunksize=chunk,
                 method="multi",
             )
-            return  # thành công
+            return
         except Exception as e:
             last_err = e
             log(f"  [RETRY {attempt}/{max_retries}] Push fail với chunksize={chunk}: {type(e).__name__}")
             log(f"           Thử lại sau 5s với chunksize nhỏ hơn...")
             time.sleep(5)
-            # Dispose engine pool để lấy connection mới
             engine.dispose()
 
-    # Hết retry — thử phương án cuối: method=None (executemany, chậm nhưng bền)
     log("  [FINAL] Thử method=None (chậm hơn nhưng ổn định)...")
     try:
         df.to_sql(
             table_name,
             con=engine,
+            schema=schema,
             if_exists="replace",
             index=False,
             chunksize=500,
@@ -870,42 +865,18 @@ def _push_with_retry(engine, df, table_name, max_retries=3):
 
 # ============================================================================
 def push_dashboard_data(engine, df_master, df_core, df_neo, df_tsa, duration_sec):
-    log("[Step 7] Đang push dashboard_master_data lên Supabase...")
+    log("[Step 7] Đang push dashboard.master_data lên Supabase...")
 
-    # Sanitize column names: Supabase/Postgres không thích khoảng trắng nhiều/ký tự đặc biệt
-    # nhưng vẫn giữ được nếu dùng quoted identifier. to_sql sẽ auto-quote.
-    # -> giữ nguyên tên cột tiếng Việt cho dashboard dễ hiểu.
+    _push_with_retry(engine, df_master, "master_data", schema="dashboard")
+    log(f"  [OK] Đã push {len(df_master)} dòng vào dashboard.master_data")
 
-    # Ghi đè full (replace) — vì dashboard cần snapshot mới hoàn toàn
-    # LƯU Ý: chunksize phải NHỎ (200) vì bảng có 65 cột.
-    # chunksize=1000 × 65 cột = 65,000 params/statement → Supabase pooler drop connection.
-    # method=None (executemany từng dòng theo chunk) ổn định hơn method="multi" với pooler.
-    _push_with_retry(engine, df_master, "dashboard_master_data")
-    log(f"  [OK] Đã push {len(df_master)} dòng vào dashboard_master_data")
-
-    # Meta
-    log("[Step 8] Cập nhật dashboard_meta...")
+    log("[Step 8] Cập nhật dashboard.meta...")
     date_min = df_master["Ngày thanh toán"].min() if "Ngày thanh toán" in df_master.columns else None
     date_max = df_master["Ngày thanh toán"].max() if "Ngày thanh toán" in df_master.columns else None
 
     with engine.begin() as conn:
         conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS dashboard_meta (
-                id           SERIAL PRIMARY KEY,
-                updated_at   TIMESTAMPTZ DEFAULT NOW(),
-                row_count    INTEGER,
-                core_count   INTEGER,
-                neo_count    INTEGER,
-                tsa_count    INTEGER,
-                date_min     DATE,
-                date_max     DATE,
-                duration_sec NUMERIC,
-                status       TEXT,
-                error_msg    TEXT
-            );
-        """))
-        conn.execute(text("""
-            INSERT INTO dashboard_meta
+            INSERT INTO dashboard.meta
                 (row_count, core_count, neo_count, tsa_count,
                  date_min, date_max, duration_sec, status, error_msg)
             VALUES
@@ -919,7 +890,7 @@ def push_dashboard_data(engine, df_master, df_core, df_neo, df_tsa, duration_sec
             "dmax": date_max.date() if pd.notna(date_max) else None,
             "dur": duration_sec,
         })
-    log("  [OK] dashboard_meta updated")
+    log("  [OK] dashboard.meta updated")
 
 
 # ============================================================================
@@ -941,7 +912,8 @@ def main():
 
     engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 30, "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5})
 
-    push_sources_to_supabase(engine, df_ns, qd1, df_union)
+    # Phase 0: bỏ push 3 bảng nguồn — dashboard không dùng, chỉ tốn Supabase resources
+    # push_sources_to_supabase(engine, df_ns, qd1, df_union)
 
     df_core, df_neo, df_tsa = run_duckdb_queries(df_ns, qd1, df_union)
     df_master = combine_master(df_core, df_neo, df_tsa)
@@ -967,22 +939,7 @@ if __name__ == "__main__":
                 engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 30, "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5})
                 with engine.begin() as conn:
                     conn.execute(text("""
-                        CREATE TABLE IF NOT EXISTS dashboard_meta (
-                            id           SERIAL PRIMARY KEY,
-                            updated_at   TIMESTAMPTZ DEFAULT NOW(),
-                            row_count    INTEGER,
-                            core_count   INTEGER,
-                            neo_count    INTEGER,
-                            tsa_count    INTEGER,
-                            date_min     DATE,
-                            date_max     DATE,
-                            duration_sec NUMERIC,
-                            status       TEXT,
-                            error_msg    TEXT
-                        );
-                    """))
-                    conn.execute(text("""
-                        INSERT INTO dashboard_meta (status, error_msg)
+                        INSERT INTO dashboard.meta (status, error_msg)
                         VALUES ('error', :msg)
                     """), {"msg": f"{type(e).__name__}: {str(e)[:500]}"})
             except Exception as inner:

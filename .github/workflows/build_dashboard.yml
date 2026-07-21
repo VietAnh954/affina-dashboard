@@ -3,16 +3,11 @@ name: Build Dashboard Data
 on:
   # Cron schedules (gio VN - 7 = gio UTC)
   # 07:11 VN = 00:11 UTC
-  # 09:21 VN = 02:21 UTC
-  # 10:00 VN = 03:00 UTC (giu nguyen)
   # 14:27 VN = 07:27 UTC
-  # 16:33 VN = 09:33 UTC
+  # Giam tu 5 xuong 2 lan/ngay de giam load Supabase (Phase 0)
   schedule:
     - cron: '11 0 * * *'
-    - cron: '21 2 * * *'
-    - cron: '0 3 * * *'
     - cron: '27 7 * * *'
-    - cron: '33 9 * * *'
   # Cho phép chạy tay từ GitHub UI
   workflow_dispatch:
   # Chạy khi push code build script (test change)

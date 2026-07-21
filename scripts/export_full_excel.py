@@ -328,7 +328,7 @@ def main():
     # 1. Load data
     log("1. Kết nối Supabase và tải dashboard_master_data...")
     engine = create_engine(db_uri, pool_pre_ping=True)
-    df = pd.read_sql('SELECT * FROM dashboard_master_data', engine)
+    df = pd.read_sql('SELECT * FROM dashboard.master_data', engine)
     log(f"   ✅ Loaded {len(df):,} rows × {len(df.columns)} columns")
 
     # Convert date columns

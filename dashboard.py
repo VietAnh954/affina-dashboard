@@ -70,7 +70,7 @@ st.markdown(
 # ============================================================================
 df_raw = load_master_data()
 if df_raw.empty:
-    st.warning("Chưa có dữ liệu trong bảng `dashboard_master_data`.")
+    st.warning("Chưa có dữ liệu trong bảng `dashboard.master_data`.")
     st.info(
         "**Cách khắc phục:**\n\n"
         "1. Vào GitHub repo Actions tab\n"

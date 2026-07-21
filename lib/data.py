@@ -45,7 +45,24 @@ COLORS = {
 PINK_SCALE = ["#FDF2FB", "#F9D8F0", "#F0AEE2", "#E285D3", "#C95BBE", "#A6409E", "#7D2E78"]
 
 DATE_COL = "Ngày thanh toán"
-DEFAULT_TTL = 300 # 5 phút
+DEFAULT_TTL = 1800  # 30 phút — giảm tải Supabase (Phase 0)
+
+SERVING_COLUMNS = [
+    "Ngày thanh toán", "Ngày bắt đầu", "Ngày kết thúc", "Ngày sinh NĐBH", "Ngày sinh NMBH",
+    "Số hợp đồng", "Sản phẩm", "Nhà BH", "Loại bảo hiểm",
+    "Đối tác nhà bảo hiểm", "Ngoại trú", "Nha khoa", "Thai sản", "Topup",
+    "Source", "Channel", "Channel Sales",
+    "Họ tên sale", "Họ tên", "Chức danh", "SĐT sale",
+    "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)", "Quản lý Cấp 3 (BDH)",
+    "Số tiền thanh toán", "Phí BH (VNĐ)", "Doanh thu trước thuế",
+    "EST_Bonus", "Affina_Revenue", "Incentive OVE", "Thưởng Teamlead",
+    "SM_OR", "SD_OR", "SM_IO", "SD_IO", "BDM_bonus", "BDD_bonus",
+    "Chi Agency", "Chi QL", "Budget Neo T6",
+    "rate_bonus", "Affina_rate_bonus", "exchange_core",
+    "Tên NĐBH", "Giới tính NNBH", "CCCD NĐBH",
+    "Tên NMBH", "CCCD NMBH", "Quan hệ", "SĐT NMBH", "Email NMBH", "Địa chỉ NMBH",
+    "_ingested_at",
+]
 
 
 # ============================================================================
@@ -73,12 +90,13 @@ def get_engine():
 # ============================================================================
 @st.cache_data(ttl=DEFAULT_TTL, show_spinner="Đang tải data từ Supabase...")
 def load_master_data() -> pd.DataFrame:
-    """Đọc dashboard_master_data. Cache 5 phút."""
+    """Đọc dashboard_master_data — chỉ SELECT cột dashboard cần."""
     engine = get_engine()
     try:
-        df = pd.read_sql(text('SELECT * FROM dashboard_master_data'), engine)
+        cols_sql = ", ".join(f'"{c}"' for c in SERVING_COLUMNS)
+        df = pd.read_sql(text(f"SELECT {cols_sql} FROM dashboard.master_data"), engine)
     except Exception as e:
-        st.error(f"Không đọc được bảng dashboard_master_data: {e}")
+        st.error(f"Không đọc được bảng dashboard.master_data: {e}")
         st.info("Có thể job GitHub Actions chưa chạy lần đầu. "
                 "Vào GitHub Actions Build Dashboard Data Run workflow.")
         st.stop()
@@ -97,7 +115,7 @@ def load_meta() -> dict:
     engine = get_engine()
     try:
         row = pd.read_sql(text(
-            "SELECT * FROM dashboard_meta ORDER BY id DESC LIMIT 1"
+            "SELECT * FROM dashboard.meta ORDER BY id DESC LIMIT 1"
         ), engine)
         return row.iloc[0].to_dict() if not row.empty else {}
     except Exception:
