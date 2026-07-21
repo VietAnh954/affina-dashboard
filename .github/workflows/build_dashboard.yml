@@ -55,6 +55,18 @@ jobs:
           PYTHONUNBUFFERED: '1'
         run: python scripts/build_dashboard_data.py
 
+      - name: 📦 Upload serving.parquet to GitHub Release
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create data-latest \
+            --title "Dashboard Data (latest)" \
+            --notes "Auto-updated by GitHub Actions" \
+            --latest=false 2>/dev/null || true
+          gh release upload data-latest serving.parquet --clobber
+          echo "Uploaded serving.parquet to release data-latest"
+
       - name: 📊 Job Summary
         if: always()
         run: |

@@ -62,6 +62,7 @@ tmp/
 *.xls
 *.csv
 !requirements*.txt
+*.parquet
 .duckdb
 *.duckdb
 *.db

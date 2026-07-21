@@ -1,18 +1,19 @@
 """
 lib/data.py — Shared utilities cho toàn bộ Streamlit dashboard
 
-- Kết nối Supabase (cached engine)
-- Load dashboard_master_data (cache TTL 5 phút)
+- Load data từ Parquet (GitHub Release) hoặc Supabase (fallback)
 - Load dashboard_meta (last update info)
 - Helper format số VNĐ, ngày
 - Global filter application
 """
 from __future__ import annotations
 
+import io
 import os
 from datetime import datetime, timezone, timedelta
 
 import pandas as pd
+import requests
 import streamlit as st
 from sqlalchemy import create_engine, text
 
@@ -88,18 +89,61 @@ def get_engine():
 # ============================================================================
 # Data loading
 # ============================================================================
-@st.cache_data(ttl=DEFAULT_TTL, show_spinner="Đang tải data từ Supabase...")
-def load_master_data() -> pd.DataFrame:
-    """Đọc dashboard_master_data — chỉ SELECT cột dashboard cần."""
-    engine = get_engine()
+GITHUB_REPO = "VietAnh954/affina-dashboard"
+PARQUET_TAG = "data-latest"
+PARQUET_ASSET = "serving.parquet"
+
+
+def _get_github_token() -> str | None:
     try:
-        cols_sql = ", ".join(f'"{c}"' for c in SERVING_COLUMNS)
-        df = pd.read_sql(text(f"SELECT {cols_sql} FROM dashboard.master_data"), engine)
-    except Exception as e:
-        st.error(f"Không đọc được bảng dashboard.master_data: {e}")
-        st.info("Có thể job GitHub Actions chưa chạy lần đầu. "
-                "Vào GitHub Actions Build Dashboard Data Run workflow.")
-        st.stop()
+        return st.secrets["GITHUB_TOKEN"]
+    except Exception:
+        return os.environ.get("GITHUB_TOKEN")
+
+
+def _load_from_parquet() -> pd.DataFrame | None:
+    token = _get_github_token()
+    if not token:
+        return None
+    try:
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+        api_url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/tags/{PARQUET_TAG}"
+        resp = requests.get(api_url, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            return None
+        assets = resp.json().get("assets", [])
+        asset_url = None
+        for a in assets:
+            if a["name"] == PARQUET_ASSET:
+                asset_url = a["url"]
+                break
+        if not asset_url:
+            return None
+        dl_headers = {"Authorization": f"token {token}", "Accept": "application/octet-stream"}
+        dl_resp = requests.get(asset_url, headers=dl_headers, timeout=60)
+        if dl_resp.status_code != 200:
+            return None
+        return pd.read_parquet(io.BytesIO(dl_resp.content))
+    except Exception:
+        return None
+
+
+def _load_from_supabase() -> pd.DataFrame:
+    engine = get_engine()
+    cols_sql = ", ".join(f'"{c}"' for c in SERVING_COLUMNS)
+    return pd.read_sql(text(f"SELECT {cols_sql} FROM dashboard.master_data"), engine)
+
+
+@st.cache_data(ttl=DEFAULT_TTL, show_spinner="Đang tải data...")
+def load_master_data() -> pd.DataFrame:
+    df = _load_from_parquet()
+    if df is None:
+        try:
+            df = _load_from_supabase()
+        except Exception as e:
+            st.error(f"Không đọc được data: {e}")
+            st.info("Vào GitHub Actions → Build Dashboard Data → Run workflow.")
+            st.stop()
 
     if DATE_COL in df.columns:
         df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
@@ -241,26 +285,6 @@ def apply_filters(df: pd.DataFrame, f: dict) -> pd.DataFrame:
 # ============================================================================
 # Formatting helpers (i18n from lib/i18n.py)
 # ============================================================================
-def fmt_vnd(x, short: bool = False) -> str:
-    if pd.isna(x):
-        return "-"
-    x = float(x)
-    from lib.i18n import get_lang
-    lang = get_lang()
-    if short:
-        if lang == "vi":
-            units = [("nghìn tỷ", 1e12), ("tỷ", 1e9), ("tr", 1e6), ("k", 1e3)]
-        else:
-            units = [("T", 1e12), ("B", 1e9), ("M", 1e6), ("K", 1e3)]
-        for unit, div in units:
-            if abs(x) >= div:
-                val = x / div
-                if abs(val) < 10:   return f"{val:,.2f} {unit}"
-                elif abs(val) < 100: return f"{val:,.1f} {unit}"
-                else:                return f"{val:,.0f} {unit}"
-        return f"{x:,.0f}"
-    return f"{x:,.0f} ₫"
-
 def fmt_vnd(x, short: bool = False) -> str:
     if pd.isna(x):
         return "-"

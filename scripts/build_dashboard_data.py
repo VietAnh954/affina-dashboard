@@ -818,7 +818,47 @@ def combine_master(df_core, df_neo, df_tsa):
 
 
 # ============================================================================
-# 8. PUSH DASHBOARD_MASTER_DATA + META LÊN SUPABASE
+# 8. EXPORT PARQUET FILES (Phase 1 — Parquet serving)
+# ============================================================================
+SERVING_COLUMNS = [
+    "Ngày thanh toán", "Ngày bắt đầu", "Ngày kết thúc", "Ngày sinh NĐBH", "Ngày sinh NMBH",
+    "Số hợp đồng", "Sản phẩm", "Nhà BH", "Loại bảo hiểm",
+    "Đối tác nhà bảo hiểm", "Ngoại trú", "Nha khoa", "Thai sản", "Topup",
+    "Source", "Channel", "Channel Sales",
+    "Họ tên sale", "Họ tên", "Chức danh", "SĐT sale",
+    "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)", "Quản lý Cấp 3 (BDH)",
+    "Số tiền thanh toán", "Phí BH (VNĐ)", "Doanh thu trước thuế",
+    "EST_Bonus", "Affina_Revenue", "Incentive OVE", "Thưởng Teamlead",
+    "SM_OR", "SD_OR", "SM_IO", "SD_IO", "BDM_bonus", "BDD_bonus",
+    "Chi Agency", "Chi QL", "Budget Neo T6",
+    "rate_bonus", "Affina_rate_bonus", "exchange_core",
+    "Tên NĐBH", "Giới tính NNBH", "CCCD NĐBH",
+    "Tên NMBH", "CCCD NMBH", "Quan hệ", "SĐT NMBH", "Email NMBH", "Địa chỉ NMBH",
+    "_ingested_at",
+]
+
+
+def export_parquet(df_master):
+    log("[Step 7a] Xuất parquet files...")
+    output_dir = os.environ.get("GITHUB_WORKSPACE", ".")
+
+    serving_cols = [c for c in SERVING_COLUMNS if c in df_master.columns]
+    df_serving = df_master[serving_cols].copy()
+    serving_path = os.path.join(output_dir, "serving.parquet")
+    df_serving.to_parquet(serving_path, engine="pyarrow", compression="snappy", index=False)
+    serving_size = os.path.getsize(serving_path) / (1024 * 1024)
+    log(f"  [OK] serving.parquet: {len(df_serving)} rows, {len(serving_cols)} cols, {serving_size:.1f} MB")
+
+    backup_path = os.path.join(output_dir, "full_backup.parquet")
+    df_master.to_parquet(backup_path, engine="pyarrow", compression="snappy", index=False)
+    backup_size = os.path.getsize(backup_path) / (1024 * 1024)
+    log(f"  [OK] full_backup.parquet: {len(df_master)} rows, {len(df_master.columns)} cols, {backup_size:.1f} MB")
+
+    return serving_path, backup_path
+
+
+# ============================================================================
+# 9. PUSH DASHBOARD_MASTER_DATA + META LÊN SUPABASE
 # ============================================================================
 def _push_with_retry(engine, df, table_name, schema="dashboard", max_retries=3):
     """Push DataFrame lên Supabase với chunksize nhỏ + retry khi connection drop."""
@@ -917,6 +957,8 @@ def main():
 
     df_core, df_neo, df_tsa = run_duckdb_queries(df_ns, qd1, df_union)
     df_master = combine_master(df_core, df_neo, df_tsa)
+
+    export_parquet(df_master)
 
     duration = round(time.time() - t_start, 2)
     push_dashboard_data(engine, df_master, df_core, df_neo, df_tsa, duration)
