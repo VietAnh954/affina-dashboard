@@ -26,9 +26,11 @@ from lib.data import (
 
 st.set_page_config(page_title="Chi tiết & Export", layout="wide")
 
-from lib.auth import require_auth
+from lib.auth import require_auth, render_user_info, get_pii_level
 require_auth("export", "Chi tiết & Export")
+render_user_info()
 
+from lib.pii import strip_pii
 from lib.theme import inject_css, render_header
 inject_css()
 render_header()
@@ -314,6 +316,8 @@ df_all = load_master_data()
 if df_all.empty:
     st.warning("Chưa có dữ liệu.")
     st.stop()
+
+df_all = strip_pii(df_all, get_pii_level())
 
 # Sidebar filters + apply
 filters = render_sidebar_filters(df_all)

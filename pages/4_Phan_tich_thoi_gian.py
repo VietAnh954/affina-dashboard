@@ -17,9 +17,11 @@ from lib.data import (
 
 st.set_page_config(page_title="Phân tích thời gian", layout="wide")
 
-from lib.auth import require_auth
+from lib.auth import require_auth, render_user_info, get_pii_level
 require_auth("time", "Phân tích thời gian")
+render_user_info()
 
+from lib.pii import strip_pii
 from lib.theme import inject_css, render_header
 inject_css()
 render_header()
@@ -32,6 +34,7 @@ if df_raw.empty:
     empty_state("Chưa có data.")
     st.stop()
 
+df_raw = strip_pii(df_raw, get_pii_level())
 filters = render_sidebar_filters(df_raw)
 df = apply_filters(df_raw, filters)
 if df.empty:

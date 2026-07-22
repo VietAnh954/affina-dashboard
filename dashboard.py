@@ -36,8 +36,9 @@ st.set_page_config(
     },
 )
 
-from lib.auth import require_auth
+from lib.auth import require_auth, render_user_info
 require_auth("home", "Tong quan")
+render_user_info()
 
 from lib.theme import inject_css, render_header
 inject_css()

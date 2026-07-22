@@ -26,7 +26,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from lib.auth import require_auth
+from lib.auth import require_auth, render_user_info
 from lib.data import (
     COLORS, DATE_COL,
     apply_plotly_layout, empty_state,
@@ -38,6 +38,7 @@ st.set_page_config(page_title="KPI Competition", layout="wide")
 
 # ── Auth ──
 require_auth("kpi", "KPI Competition — CLB Tinh Hoa Affina")
+render_user_info()
 
 from lib.theme import inject_css, render_header
 inject_css()

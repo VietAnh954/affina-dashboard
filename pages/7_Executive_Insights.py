@@ -38,8 +38,9 @@ from lib.data import (
 # ============================================================================
 st.set_page_config(page_title="Executive Insights", layout="wide")
 
-from lib.auth import require_auth
+from lib.auth import require_auth, render_user_info
 require_auth("executive", "Executive Insights")
+render_user_info()
 
 from lib.theme import inject_css, render_header
 inject_css()

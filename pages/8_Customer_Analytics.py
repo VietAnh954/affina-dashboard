@@ -34,9 +34,11 @@ from lib.data import (
 
 st.set_page_config(page_title="Customer Analytics", layout="wide")
 
-from lib.auth import require_auth
+from lib.auth import require_auth, render_user_info, get_pii_level
 require_auth("customer", "Customer Analytics")
+render_user_info()
 
+from lib.pii import strip_pii
 from lib.theme import inject_css, render_header
 inject_css()
 render_header()
@@ -128,9 +130,10 @@ if df.empty:
     empty_state()
     st.stop()
 
-# Add customer ID
+# Add customer ID (before PII masking — needs raw CCCD/SĐT)
 df = df.copy()
 df["_customer_id"] = _customer_id(df)
+df = strip_pii(df, get_pii_level())
 df_valid = df[df["_customer_id"].notna()].copy()
 
 n_unique_cust = df_valid["_customer_id"].nunique()
