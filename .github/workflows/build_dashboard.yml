@@ -28,6 +28,8 @@ jobs:
     name: Build & Push Dashboard Data
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
 
     steps:
       - name: 📥 Checkout code
@@ -60,10 +62,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create data-latest \
-            --title "Dashboard Data (latest)" \
-            --notes "Auto-updated by GitHub Actions" \
-            --latest=false 2>/dev/null || true
+          if ! gh release view data-latest > /dev/null 2>&1; then
+            echo "Creating release data-latest..."
+            gh release create data-latest \
+              --title "Dashboard Data (latest)" \
+              --notes "Auto-updated by GitHub Actions" \
+              --latest=false
+          fi
           gh release upload data-latest serving.parquet --clobber
           echo "Uploaded serving.parquet to release data-latest"
 
