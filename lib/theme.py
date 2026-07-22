@@ -300,5 +300,59 @@ hr {
 [data-testid="stSpinner"] {
     color: var(--brand-primary) !important;
 }
+
+/* ================================================================
+   MOBILE RESPONSIVE (Phase 4)
+   ================================================================ */
+@media (max-width: 768px) {
+    .stMainBlockContainer {
+        padding: 0.5rem 0.75rem 2rem 0.75rem;
+    }
+
+    [data-testid="stMetric"] {
+        padding: 10px 12px;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 1.1rem !important;
+    }
+    [data-testid="stMetricLabel"] p {
+        font-size: 0.7rem !important;
+    }
+
+    .stMarkdown h1 {
+        font-size: 1.4rem !important;
+    }
+    .stMarkdown h3 {
+        font-size: 1rem !important;
+    }
+
+    button[data-baseweb="tab"] {
+        font-size: 0.75rem !important;
+        padding: 6px 10px !important;
+    }
+
+    [data-testid="stDataFrame"] thead th {
+        font-size: 0.72rem !important;
+        padding: 6px 8px !important;
+    }
+    [data-testid="stDataFrame"] tbody td {
+        font-size: 0.75rem;
+        padding: 5px 8px !important;
+    }
+
+    [data-testid="stPlotlyChart"] {
+        padding: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .stMainBlockContainer {
+        padding: 0.3rem 0.5rem 1.5rem 0.5rem;
+    }
+
+    [data-testid="stMetricValue"] {
+        font-size: 0.95rem !important;
+    }
+}
 </style>
 """

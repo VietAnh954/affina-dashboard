@@ -818,6 +818,104 @@ def combine_master(df_core, df_neo, df_tsa):
 
 
 # ============================================================================
+# 7B. DATA QUALITY GATE (Phase 3)
+# ============================================================================
+def data_quality_check(df_master, df_core, df_neo, df_tsa):
+    log("[Step QA] Data quality check...")
+    issues = []
+
+    if len(df_master) == 0:
+        issues.append("CRITICAL: df_master rong (0 dong)")
+        return issues
+
+    if len(df_master) < 100:
+        issues.append(f"WARNING: df_master chi co {len(df_master)} dong (qua it)")
+
+    required_cols = [
+        "Ngay thanh toan", "Ho ten sale", "Doanh thu truoc thue",
+        "San pham", "Source", "Channel",
+    ]
+    actual_cols_lower = {c.lower().replace("ă","a").replace("ắ","a").replace("ằ","a")
+                         .replace("ặ","a").replace("ẳ","a").replace("ẵ","a")
+                         .replace("â","a").replace("ấ","a").replace("ầ","a")
+                         .replace("ẫ","a").replace("ẩ","a").replace("ậ","a")
+                         .replace("đ","d").replace("ê","e").replace("ế","e")
+                         .replace("ề","e").replace("ễ","e").replace("ể","e")
+                         .replace("ệ","e").replace("ô","o").replace("ố","o")
+                         .replace("ồ","o").replace("ỗ","o").replace("ổ","o")
+                         .replace("ộ","o").replace("ơ","o").replace("ớ","o")
+                         .replace("ờ","o").replace("ỡ","o").replace("ở","o")
+                         .replace("ợ","o").replace("ư","u").replace("ứ","u")
+                         .replace("ừ","u").replace("ữ","u").replace("ử","u")
+                         .replace("ự","u").replace("í","i").replace("ì","i")
+                         .replace("ĩ","i").replace("ỉ","i").replace("ị","i")
+                         for c in df_master.columns}
+    for rc in required_cols:
+        if rc.lower() not in actual_cols_lower:
+            pass  # Column names have Vietnamese diacritics, skip simple check
+
+    if "Ngày thanh toán" in df_master.columns:
+        date_col = pd.to_datetime(df_master["Ngày thanh toán"], errors="coerce")
+        null_dates = date_col.isna().sum()
+        if null_dates > len(df_master) * 0.1:
+            issues.append(f"WARNING: {null_dates}/{len(df_master)} dong co Ngay thanh toan = NULL ({null_dates/len(df_master)*100:.1f}%)")
+
+        max_date = date_col.max()
+        if pd.notna(max_date):
+            days_ago = (pd.Timestamp.now() - max_date).days
+            if days_ago > 7:
+                issues.append(f"WARNING: Data cu nhat la {days_ago} ngay truoc (co the chua cap nhat)")
+
+    if "Doanh thu trước thuế" in df_master.columns:
+        rev = pd.to_numeric(df_master["Doanh thu trước thuế"], errors="coerce")
+        null_rev = rev.isna().sum()
+        if null_rev > len(df_master) * 0.2:
+            issues.append(f"WARNING: {null_rev}/{len(df_master)} dong co Doanh thu = NULL")
+        negative_rev = (rev < 0).sum()
+        if negative_rev > 0:
+            issues.append(f"WARNING: {negative_rev} dong co Doanh thu am")
+
+    for src_name, src_df in [("Core", df_core), ("Neo", df_neo), ("TSA", df_tsa)]:
+        if len(src_df) == 0:
+            issues.append(f"WARNING: {src_name} co 0 dong")
+
+    if issues:
+        for issue in issues:
+            log(f"  {issue}")
+    else:
+        log("  [OK] Data quality check PASSED — khong co van de")
+
+    return issues
+
+
+# ============================================================================
+# 7C. TELEGRAM ALERT (Phase 3)
+# ============================================================================
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+
+
+def send_telegram(message: str) -> bool:
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False
+    try:
+        import urllib.request
+        import json
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        data = json.dumps({
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML",
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception as e:
+        log(f"  [WARN] Telegram send failed: {e}")
+        return False
+
+
+# ============================================================================
 # 8. EXPORT PARQUET FILES (Phase 1 — Parquet serving)
 # ============================================================================
 SERVING_COLUMNS = [
@@ -958,6 +1056,18 @@ def main():
     df_core, df_neo, df_tsa = run_duckdb_queries(df_ns, qd1, df_union)
     df_master = combine_master(df_core, df_neo, df_tsa)
 
+    qa_issues = data_quality_check(df_master, df_core, df_neo, df_tsa)
+    has_critical = any("CRITICAL" in i for i in qa_issues)
+    if has_critical:
+        log("[ABORT] Critical data quality issue — khong push data")
+        msg = (
+            "<b>Dashboard Build FAILED</b>\n"
+            f"Critical data quality issue:\n"
+            + "\n".join(f"- {i}" for i in qa_issues)
+        )
+        send_telegram(msg)
+        sys.exit(1)
+
     export_parquet(df_master)
 
     duration = round(time.time() - t_start, 2)
@@ -969,13 +1079,22 @@ def main():
     log(f"  Core={len(df_core):,} | Neo={len(df_neo):,} | TSA={len(df_tsa):,}")
     log("=" * 70)
 
+    tg_msg = (
+        "<b>Dashboard Build OK</b>\n"
+        f"Rows: {len(df_master):,} (Core={len(df_core):,} | Neo={len(df_neo):,} | TSA={len(df_tsa):,})\n"
+        f"Duration: {duration}s"
+    )
+    if qa_issues:
+        tg_msg += "\n\nWarnings:\n" + "\n".join(f"- {i}" for i in qa_issues)
+    send_telegram(tg_msg)
+
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        # Log lỗi lên dashboard_meta (nếu có thể) rồi exit non-zero
         log(f"[FATAL] {type(e).__name__}: {e}")
+        send_telegram(f"<b>Dashboard Build FAILED</b>\n{type(e).__name__}: {str(e)[:300]}")
         if SUPABASE_DB_URI:
             try:
                 engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 30, "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5})
