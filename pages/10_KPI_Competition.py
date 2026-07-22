@@ -190,14 +190,14 @@ for col in HIDDEN_COLS:
     if col in df.columns:
         df = df.drop(columns=[col])
 
-if "Chuc danh" in df.columns:
-    df["Cap thi dua"] = df["Chuc danh"].apply(_classify_level)
+if "Chức danh" in df.columns:
+    df["Cap thi dua"] = df["Chức danh"].apply(_classify_level)
 else:
     df["Cap thi dua"] = "Chuyen Vien"
 
 df["month"] = df[DATE_COL].dt.to_period("M")
 
-sale_col = "Ho ten sale" if "Ho ten sale" in df.columns else "Ho ten"
+sale_col = "Họ tên sale" if "Họ tên sale" in df.columns else "Họ tên"
 if sale_col not in df.columns:
     st.error("Khong tim thay cot ten sale.")
     st.stop()
@@ -256,8 +256,8 @@ st.markdown("### Diem theo thang va quy")
 
 # Compute monthly revenue per sale
 monthly_rev = df.groupby([sale_col, "month"]).agg(
-    revenue=("Doanh thu truoc thue", "sum"),
-    n_hd=("So hop dong", "nunique") if "So hop dong" in df.columns else (sale_col, "count"),
+    revenue=("Doanh thu trước thuế", "sum"),
+    n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
     cap_thi_dua=("Cap thi dua", "first"),
     source=("Source", "first") if "Source" in df.columns else (sale_col, "first"),
 ).reset_index()
@@ -366,12 +366,12 @@ st.divider()
 st.markdown("### Bang xep hang tong hop (toan chu ky)")
 
 ranking = df.groupby([sale_col], as_index=False).agg(
-    chuc_danh=("Chuc danh", "first") if "Chuc danh" in df.columns else (sale_col, "count"),
+    chuc_danh=("Chức danh", "first") if "Chức danh" in df.columns else (sale_col, "count"),
     cap_thi_dua=("Cap thi dua", "first"),
     source=("Source", "first") if "Source" in df.columns else (sale_col, "count"),
     channel=("Channel", "first") if "Channel" in df.columns else (sale_col, "count"),
-    total_revenue=("Doanh thu truoc thue", "sum"),
-    n_hd=("So hop dong", "nunique") if "So hop dong" in df.columns else (sale_col, "count"),
+    total_revenue=("Doanh thu trước thuế", "sum"),
+    n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
     n_months=(DATE_COL, lambda x: x.dt.to_period("M").nunique()),
 )
 
