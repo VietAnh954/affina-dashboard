@@ -2,15 +2,17 @@ name: Build Dashboard Data
 
 on:
   # Cron schedules (gio VN - 7 = gio UTC)
-  # 07:11 VN = 00:11 UTC
-  # 14:27 VN = 07:27 UTC
-  # Giam tu 5 xuong 2 lan/ngay de giam load Supabase (Phase 0)
+  # 07:11 VN = 00:11 UTC  |  10:11 VN = 03:11 UTC
+  # 13:11 VN = 06:11 UTC  |  16:11 VN = 09:11 UTC
+  # 19:11 VN = 12:11 UTC
+  # Tang len 5 lan/ngay vi co parquet serving, Supabase chi lam fallback
   schedule:
     - cron: '11 0 * * *'
-    - cron: '27 7 * * *'
-  # Cho phép chạy tay từ GitHub UI
+    - cron: '11 3 * * *'
+    - cron: '11 6 * * *'
+    - cron: '11 9 * * *'
+    - cron: '11 12 * * *'
   workflow_dispatch:
-  # Chạy khi push code build script (test change)
   push:
     branches: [main]
     paths:
@@ -18,7 +20,6 @@ on:
       - 'requirements-actions.txt'
       - '.github/workflows/build_dashboard.yml'
 
-# Chỉ cho phép 1 run duplicated cùng thời điểm
 concurrency:
   group: build-dashboard-data
   cancel-in-progress: false
@@ -53,13 +54,13 @@ jobs:
           GOOGLE_CLIENT_ID:     ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:     ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Asia/Ho_Chi_Minh
           PYTHONUNBUFFERED: '1'
         run: python scripts/build_dashboard_data.py
 
-      - name: 📦 Upload serving.parquet to GitHub Release
+      - name: 📦 Upload parquet files to GitHub Release
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -72,7 +73,30 @@ jobs:
               --latest=false
           fi
           gh release upload data-latest serving.parquet --clobber
-          echo "Uploaded serving.parquet to release data-latest"
+          echo "Uploaded serving.parquet"
+
+          # Backup rotation: upload full_backup with date tag, keep last 7
+          DATE_TAG=$(date '+%Y%m%d_%H%M')
+          BACKUP_RELEASE="backup-${DATE_TAG}"
+          if [ -f full_backup.parquet ]; then
+            gh release create "$BACKUP_RELEASE" \
+              --title "Backup $DATE_TAG" \
+              --notes "Auto backup — $(date '+%Y-%m-%d %H:%M')" \
+              --latest=false \
+              full_backup.parquet
+            echo "Uploaded full_backup.parquet to $BACKUP_RELEASE"
+
+            # Cleanup: keep only last 7 backup releases
+            echo "Cleaning old backups..."
+            gh release list --limit 100 \
+              | grep '^Backup ' \
+              | tail -n +8 \
+              | awk '{print $NF}' \
+              | while read tag; do
+                  echo "Deleting old backup: $tag"
+                  gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+                done
+          fi
 
       - name: 📊 Job Summary
         if: always()
@@ -82,4 +106,4 @@ jobs:
           echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 Dashboard: https://affina-dashboard.streamlit.app" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Dashboard: https://affina-dashboard-vatest.streamlit.app" >> $GITHUB_STEP_SUMMARY
