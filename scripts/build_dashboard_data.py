@@ -55,7 +55,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # ============================================================================
 SHEET_FILE_ID = "1qc_QhrvpoLLp6w9RkGBEkm8qBO49GJE8oMlwkCdJOsk"  # Google Sheet Cấp đơn
 
-DSNS_FILE_NAME  = "DSNS CTV sale Affina NEW - HR NHẬP.xlsx"
+DSNS_FILE_NAME  = "DSNS CTV sale Affina FINAL V2.xlsx"
 QUYDOI_FILE_NAME = "26_02_04_sửa ngày_quy_doi_all.xlsx"
 
 # Time range cho dashboard: full 3 năm (giống File 1 & File 3 gốc)
