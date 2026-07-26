@@ -11,14 +11,16 @@ Cấp bậc:
   - Chuyên Viên (CVKD/AG-RMC/CTV TSA):  Top 5 điểm quy đổi
 
 Tính điểm Chuyên Viên:
-  - Mỗi 5 triệu doanh thu cá nhân = 1 điểm
-  - Mỗi 5 triệu doanh thu từ người giới thiệu = 1 điểm
-  - Hạng 1 tháng: +10 điểm, Hạng 2: +5, Hạng 3: +3
+  - Mỗi 5 triệu doanh thu cá nhân = 1 điểm (tính theo tháng)
+  - Mỗi 5 triệu doanh thu từ người giới thiệu = 1 điểm (tính theo tháng)
+  - Bonus rank THEO QUÝ: Hạng 1: +10, Hạng 2: +5, Hạng 3: +3
+  - Tiebreaker: bằng điểm → ai có tổng doanh thu cao hơn xếp trên
 
 LƯU Ý: KHÔNG hiển thị Affina_Revenue trong trang này.
 ================================================================================
 """
 from datetime import date
+from io import BytesIO
 
 import numpy as np
 import pandas as pd
@@ -36,7 +38,6 @@ from lib.data import (
 
 st.set_page_config(page_title="KPI Competition", layout="wide")
 
-# ── Auth ──
 require_auth("kpi", "KPI Competition — CLB Tinh Hoa Affina")
 render_user_info()
 
@@ -49,8 +50,8 @@ render_header()
 # CONFIG
 # ============================================================================
 COMP_START = pd.Timestamp("2026-04-01")
-COMP_END   = pd.Timestamp("2027-03-31")
-POINTS_PER = 5_000_000  # 5 triệu = 1 điểm
+COMP_END = pd.Timestamp("2027-03-31")
+POINTS_PER = 5_000_000
 
 HIDDEN_COLS = {"Affina_Revenue", "Affina_rate_bonus"}
 
@@ -72,6 +73,8 @@ QUARTERS = {
     "Q3 (10-12/2026)": (pd.Timestamp("2026-10-01"), pd.Timestamp("2026-12-31")),
     "Q4 (01-03/2027)": (pd.Timestamp("2027-01-01"), pd.Timestamp("2027-03-31")),
 }
+
+QUARTER_RANK_BONUS = {1: 10, 2: 5, 3: 3}
 
 
 # ============================================================================
@@ -97,13 +100,6 @@ def _compute_points(revenue: float) -> int:
     return int(revenue // POINTS_PER)
 
 
-def _monthly_rank_bonus(rank: int) -> int:
-    if rank == 1: return 10
-    if rank == 2: return 5
-    if rank == 3: return 3
-    return 0
-
-
 def _get_current_quarter() -> str:
     today = pd.Timestamp.now().normalize()
     for qname, (qs, qe) in QUARTERS.items():
@@ -115,6 +111,62 @@ def _get_current_quarter() -> str:
 def _is_quarter_closed(qname: str) -> bool:
     _, qe = QUARTERS[qname]
     return pd.Timestamp.now().normalize() > qe
+
+
+def _normalize_phone(val) -> str:
+    if pd.isna(val) or str(val).strip() in ("", "nan", "None"):
+        return ""
+    return str(val).strip().lstrip("0")
+
+
+def _export_excel(df_export: pd.DataFrame, sheet_name: str = "KPI Competition") -> BytesIO:
+    output = BytesIO()
+    try:
+        from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        df_export.to_excel(output, index=False, engine="openpyxl")
+        output.seek(0)
+        return output
+
+    for col in df_export.select_dtypes(include=["datetime64[ns, UTC]", "datetime64[ns]"]).columns:
+        df_export[col] = df_export[col].dt.strftime("%d/%m/%Y")
+
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df_export.to_excel(writer, index=False, sheet_name=sheet_name)
+        ws = writer.sheets[sheet_name]
+
+        header_fill = PatternFill("solid", fgColor="7038A0")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        thin_border = Border(
+            left=Side("thin"), right=Side("thin"),
+            top=Side("thin"), bottom=Side("thin")
+        )
+        center = Alignment(horizontal="center", vertical="center")
+
+        for col_idx in range(1, ws.max_column + 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center
+            cell.border = thin_border
+
+            max_len = len(str(cell.value)) + 2
+            for row_idx in range(2, min(ws.max_row + 1, 200)):
+                data_cell = ws.cell(row=row_idx, column=col_idx)
+                data_cell.border = thin_border
+                data_cell.alignment = Alignment(vertical="center")
+                val_len = len(str(data_cell.value)) if data_cell.value else 0
+                max_len = max(max_len, val_len + 2)
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len, 35)
+
+        top3_fill = PatternFill("solid", fgColor="FDF2FB")
+        for row_idx in range(2, min(5, ws.max_row + 1)):
+            for col_idx in range(1, ws.max_column + 1):
+                ws.cell(row=row_idx, column=col_idx).fill = top3_fill
+
+    output.seek(0)
+    return output
 
 
 # ============================================================================
@@ -159,13 +211,15 @@ with st.expander("**THE LE THI DUA — CLB Tinh Hoa Affina 2026-2027**", expande
 **Truong Phong** (Top 5):
 - Top 05 co ket qua KPI quan ly cao nhat
 - Dat >= 70% KPI hang thang trong it nhat 03 thang
-- Tong ket qua trung binh cac thang >= 50%
+- Tong ket qua trung binh cua cac thang >= 50%
 
 **Chuyen Vien KD** (Top 5):
 - Top 05 co tong diem quy doi cao nhat
-- Moi 5 trieu dong doanh thu = **1 diem**
-- Bonus rank hang thang: Hang 1 = +10, Hang 2 = +5, Hang 3 = +3
-- Tinh toan thuc hien **tung thang**
+- Moi 5 trieu dong doanh thu ca nhan = **1 diem**
+- Moi 5 trieu dong doanh thu tu Nguoi duoc gioi thieu = **1 diem** cho Nguoi gioi thieu
+- Tinh toan thuc hien **tung thang** (thang nao tinh thang do)
+- Bonus rank **theo quy**: Hang 1 = +10, Hang 2 = +5, Hang 3 = +3
+- Tiebreaker: bang diem → ai co tong doanh thu phi cao hon duoc xep tren
 """)
 
     st.markdown("**Thoi gian:** 01/04/2026 - 31/03/2027  |  **Cong bo ket qua:** Thang 04/2027  |  **Trao thuong:** Du kien Quy 2-3/2027")
@@ -203,28 +257,81 @@ if sale_col not in df.columns:
     st.error("Khong tim thay cot ten sale.")
     st.stop()
 
-# ── Sidebar filter ──
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Bo loc KPI")
 
-level_filter = st.sidebar.radio(
-    "Cap thi dua",
-    options=["Tat ca", "Giam Doc", "Truong Phong", "Chuyen Vien"],
-    index=0,
-    key="kpi_level",
-)
+# ============================================================================
+# INLINE FILTERS (in page body, not sidebar only)
+# ============================================================================
+st.markdown("### Bo loc")
+
+fcol1, fcol2, fcol3, fcol4 = st.columns(4)
+
+with fcol1:
+    level_options = ["Tat ca", "Giam Doc", "Truong Phong", "Chuyen Vien"]
+    level_filter = st.selectbox("Cap thi dua", options=level_options, index=0, key="kpi_level_inline")
+
+with fcol2:
+    if "Source" in df.columns:
+        source_options = sorted(df["Source"].dropna().unique().tolist())
+        sel_sources = st.multiselect("Source", options=source_options, default=source_options, key="kpi_src_inline")
+    else:
+        sel_sources = None
+
+with fcol3:
+    if "Channel" in df.columns:
+        channel_options = sorted(df["Channel"].dropna().unique().tolist())
+        sel_channels = st.multiselect("Channel", options=channel_options, default=channel_options, key="kpi_ch_inline")
+    else:
+        sel_channels = None
+
+with fcol4:
+    quarter_options = ["Toan chu ky"] + list(QUARTERS.keys())
+    sel_quarter = st.selectbox("Quy", options=quarter_options, index=0, key="kpi_q_inline")
+
+# Apply filters
 if level_filter != "Tat ca":
     df = df[df["Cap thi dua"] == level_filter]
+if sel_sources is not None and sel_sources:
+    df = df[df["Source"].isin(sel_sources)]
+if sel_channels is not None and sel_channels:
+    df = df[df["Channel"].isin(sel_channels)]
+if sel_quarter != "Toan chu ky":
+    qs_f, qe_f = QUARTERS[sel_quarter]
+    df = df[(df[DATE_COL] >= qs_f) & (df[DATE_COL] <= qe_f)]
 
-if "Source" in df.columns:
-    sources = sorted(df["Source"].dropna().unique())
-    sel_src = st.sidebar.multiselect("Source", options=sources, default=sources, key="kpi_src")
-    if sel_src:
-        df = df[df["Source"].isin(sel_src)]
+# Second row filters
+fcol5, fcol6, fcol7, fcol8 = st.columns(4)
+with fcol5:
+    all_sales_list = sorted(df[sale_col].dropna().unique().tolist())
+    sel_sale = st.multiselect("Tim sale", options=all_sales_list, default=[], key="kpi_sale_inline",
+                              placeholder="Tat ca sale")
+with fcol6:
+    if "Loại bảo hiểm" in df.columns:
+        lbh_options = sorted(df["Loại bảo hiểm"].dropna().unique().tolist())
+        sel_lbh = st.multiselect("Loai BH", options=lbh_options, default=lbh_options, key="kpi_lbh_inline")
+    else:
+        sel_lbh = None
+with fcol7:
+    month_options = sorted(df["month"].unique().tolist())
+    month_labels = [f"T{m.month:02d}/{m.year}" for m in month_options]
+    sel_months = st.multiselect("Thang", options=month_labels, default=[], key="kpi_month_inline",
+                                placeholder="Tat ca thang")
+with fcol8:
+    st.markdown("")
+    st.markdown("")
+
+if sel_sale:
+    df = df[df[sale_col].isin(sel_sale)]
+if sel_lbh is not None and sel_lbh and "Loại bảo hiểm" in df.columns:
+    df = df[df["Loại bảo hiểm"].isin(sel_lbh)]
+if sel_months:
+    selected_periods = [month_options[month_labels.index(m)] for m in sel_months]
+    df = df[df["month"].isin(selected_periods)]
 
 if df.empty:
     empty_state("Khong co du lieu sau filter.")
     st.stop()
+
+st.divider()
 
 
 # ============================================================================
@@ -239,11 +346,12 @@ pct_elapsed = days_elapsed / (COMP_END - COMP_START).days * 100
 months_elapsed = min(12, max(0, (today.year - COMP_START.year) * 12 + today.month - COMP_START.month))
 current_q = _get_current_quarter()
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Ngay da qua", f"{days_elapsed} / {(COMP_END - COMP_START).days}")
 c2.metric("Ngay con lai", fmt_num(days_remaining))
 c3.metric("Quy hien tai", current_q.split(" ")[0])
 c4.metric("Tien do", f"{pct_elapsed:.1f}%")
+c5.metric("So sale tham gia", fmt_num(df[sale_col].nunique()))
 
 st.progress(min(pct_elapsed / 100, 1.0))
 
@@ -251,11 +359,10 @@ st.divider()
 
 
 # ============================================================================
-# 2. DIEM THEO THANG & QUY
+# COMPUTE SCORING (MONTHLY POINTS + QUARTERLY BONUS + REFERRAL)
 # ============================================================================
-st.markdown("### Diem theo thang va quy")
 
-# Compute monthly revenue per sale
+# --- Monthly personal revenue per sale ---
 monthly_rev = df.groupby([sale_col, "month"]).agg(
     revenue=("Doanh thu trước thuế", "sum"),
     n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
@@ -263,13 +370,48 @@ monthly_rev = df.groupby([sale_col, "month"]).agg(
     source=("Source", "first") if "Source" in df.columns else (sale_col, "first"),
 ).reset_index()
 
-monthly_rev["month_rank"] = monthly_rev.groupby("month")["revenue"].rank(ascending=False, method="min")
-monthly_rev["rank_bonus"] = monthly_rev["month_rank"].apply(_monthly_rank_bonus)
-monthly_rev["diem_dt"] = monthly_rev["revenue"].apply(_compute_points)
-monthly_rev["diem_thang"] = monthly_rev["diem_dt"] + monthly_rev["rank_bonus"]
-monthly_rev["month_ts"] = monthly_rev["month"].dt.to_timestamp()
+monthly_rev["diem_ca_nhan"] = monthly_rev["revenue"].apply(_compute_points)
 
-# Assign quarter label
+# --- Referral points ---
+referral_col = "Người giới thiệu"
+has_referral = referral_col in df.columns and df[referral_col].notna().any()
+
+if has_referral:
+    df["_ref_phone"] = df[referral_col].apply(_normalize_phone)
+    df["_sale_phone"] = df["SĐT sale"].apply(_normalize_phone) if "SĐT sale" in df.columns else ""
+
+    ref_df = df[df["_ref_phone"] != ""].copy()
+
+    if not ref_df.empty and "SĐT sale" in df.columns:
+        phone_to_sale = df.drop_duplicates(subset=["_sale_phone"]).set_index("_sale_phone")[sale_col].to_dict()
+        phone_to_sale.pop("", None)
+
+        ref_df["referrer_name"] = ref_df["_ref_phone"].map(phone_to_sale)
+        ref_matched = ref_df[ref_df["referrer_name"].notna()].copy()
+
+        if not ref_matched.empty:
+            referral_monthly = ref_matched.groupby(["referrer_name", "month"]).agg(
+                ref_revenue=("Doanh thu trước thuế", "sum")
+            ).reset_index()
+            referral_monthly.columns = [sale_col, "month", "ref_revenue"]
+            referral_monthly["diem_gioi_thieu"] = referral_monthly["ref_revenue"].apply(_compute_points)
+        else:
+            referral_monthly = pd.DataFrame(columns=[sale_col, "month", "ref_revenue", "diem_gioi_thieu"])
+    else:
+        referral_monthly = pd.DataFrame(columns=[sale_col, "month", "ref_revenue", "diem_gioi_thieu"])
+else:
+    referral_monthly = pd.DataFrame(columns=[sale_col, "month", "ref_revenue", "diem_gioi_thieu"])
+
+# Merge referral into monthly
+monthly_rev = monthly_rev.merge(
+    referral_monthly[[sale_col, "month", "diem_gioi_thieu", "ref_revenue"]],
+    on=[sale_col, "month"], how="left"
+)
+monthly_rev["diem_gioi_thieu"] = monthly_rev["diem_gioi_thieu"].fillna(0).astype(int)
+monthly_rev["ref_revenue"] = monthly_rev["ref_revenue"].fillna(0)
+monthly_rev["diem_thang"] = monthly_rev["diem_ca_nhan"] + monthly_rev["diem_gioi_thieu"]
+
+# --- Quarter assignment ---
 def _month_to_quarter(m):
     ts = m.to_timestamp()
     for qn, (qs, qe) in QUARTERS.items():
@@ -278,10 +420,26 @@ def _month_to_quarter(m):
     return ""
 
 monthly_rev["quarter"] = monthly_rev["month"].apply(_month_to_quarter)
+monthly_rev["month_ts"] = monthly_rev["month"].dt.to_timestamp()
 
-# ── Quarterly tabs ──
+# --- Quarterly rank bonus (PDF: "điểm quy đổi cao nhất trong quý") ---
+quarterly_points = monthly_rev.groupby([sale_col, "quarter"]).agg(
+    quy_diem=("diem_thang", "sum")
+).reset_index()
+
+quarterly_points["quarter_rank"] = quarterly_points.groupby("quarter")["quy_diem"].rank(
+    ascending=False, method="min"
+)
+quarterly_points["bonus_quy"] = quarterly_points["quarter_rank"].apply(
+    lambda r: QUARTER_RANK_BONUS.get(int(r), 0)
+)
+
+# ============================================================================
+# 2. DIEM THEO THANG & QUY
+# ============================================================================
+st.markdown("### Diem theo thang va quy")
+
 closed_qs = [q for q in QUARTERS if _is_quarter_closed(q)]
-open_qs = [q for q in QUARTERS if not _is_quarter_closed(q) and monthly_rev[monthly_rev["quarter"] == q].shape[0] > 0]
 
 tab_labels = []
 for q in QUARTERS:
@@ -292,10 +450,10 @@ for q in QUARTERS:
     else:
         tab_labels.append(q)
 
-# Only show tabs that have data or are current
 active_tabs = []
 for i, q in enumerate(QUARTERS):
-    if _is_quarter_closed(q) or q == current_q:
+    has_data = monthly_rev[monthly_rev["quarter"] == q].shape[0] > 0
+    if _is_quarter_closed(q) or q == current_q or has_data:
         active_tabs.append((tab_labels[i], q))
 
 if active_tabs:
@@ -305,6 +463,7 @@ if active_tabs:
         with tab:
             qs, qe = QUARTERS[qname]
             q_data = monthly_rev[monthly_rev["quarter"] == qname]
+            q_bonus = quarterly_points[quarterly_points["quarter"] == qname]
             is_closed = _is_quarter_closed(qname)
 
             if q_data.empty:
@@ -318,34 +477,38 @@ if active_tabs:
                 days_done = min((today - qs).days, days_in_q)
                 st.info(f"Dang dien ra — {days_done}/{days_in_q} ngay ({days_done/days_in_q*100:.0f}%)")
 
-            # Monthly breakdown within quarter
             months_in_q = sorted(q_data["month"].unique())
 
-            # Pivot: sale x month → points
             q_pivot = q_data.pivot_table(
-                index=[sale_col, "cap_thi_dua", "source"],
+                index=[sale_col, "cap_thi_dua"],
                 columns="month",
                 values="diem_thang",
                 aggfunc="sum",
                 fill_value=0,
             ).reset_index()
 
-            # Add quarter total
             month_cols = [c for c in q_pivot.columns if isinstance(c, pd.Period)]
             q_pivot["Tong diem quy"] = q_pivot[month_cols].sum(axis=1)
-            q_pivot = q_pivot.sort_values("Tong diem quy", ascending=False).reset_index(drop=True)
+
+            # Add quarterly bonus
+            q_pivot = q_pivot.merge(
+                q_bonus[[sale_col, "bonus_quy"]],
+                on=sale_col, how="left"
+            )
+            q_pivot["bonus_quy"] = q_pivot["bonus_quy"].fillna(0).astype(int)
+            q_pivot["Tong + Bonus"] = q_pivot["Tong diem quy"] + q_pivot["bonus_quy"]
+
+            q_pivot = q_pivot.sort_values("Tong + Bonus", ascending=False).reset_index(drop=True)
             q_pivot.insert(0, "Hang", range(1, len(q_pivot) + 1))
 
-            # Format column names
-            disp_q = q_pivot.copy()
-            rename_map = {sale_col: "Ho ten", "cap_thi_dua": "Cap", "source": "Source"}
+            rename_map = {sale_col: "Ho ten", "cap_thi_dua": "Cap", "bonus_quy": "Bonus QR"}
             for m in month_cols:
                 rename_map[m] = f"T{m.month:02d}/{m.year}"
-            disp_q = disp_q.rename(columns=rename_map)
+            disp_q = q_pivot.rename(columns=rename_map)
 
             st.dataframe(disp_q.head(30), hide_index=True, use_container_width=True)
 
-            # Top 3 of quarter
+            # Top 3 medals
             col_q1, col_q2, col_q3 = st.columns(3)
             top3_q = q_pivot.head(3)
             medals = ["1.", "2.", "3."]
@@ -353,57 +516,75 @@ if active_tabs:
             for i, (_, row) in enumerate(top3_q.iterrows()):
                 if i < 3:
                     with cols_q[i]:
+                        bonus_txt = f" (+{int(row['bonus_quy'])})" if row["bonus_quy"] > 0 else ""
                         st.metric(
                             f"{medals[i]} {row[sale_col]}",
-                            f"{int(row['Tong diem quy'])} diem",
+                            f"{int(row['Tong + Bonus'])} diem{bonus_txt}",
                         )
 
 st.divider()
 
 
 # ============================================================================
-# 3. BANG XEP HANG TONG HOP (toan chu ky)
+# 3. BANG XEP HANG TONG HOP (toan chu ky) — CHUYEN VIEN
 # ============================================================================
-st.markdown("### Bang xep hang tong hop (toan chu ky)")
+st.markdown("### Bang xep hang tong hop — Chuyen Vien KD (toan chu ky)")
 
-ranking = df.groupby([sale_col], as_index=False).agg(
-    chuc_danh=("Chức danh", "first") if "Chức danh" in df.columns else (sale_col, "count"),
-    cap_thi_dua=("Cap thi dua", "first"),
-    source=("Source", "first") if "Source" in df.columns else (sale_col, "count"),
-    channel=("Channel", "first") if "Channel" in df.columns else (sale_col, "count"),
-    total_revenue=("Doanh thu trước thuế", "sum"),
+# Total personal + referral points per month, summed over all months
+total_monthly_points = monthly_rev.groupby(sale_col).agg(
+    diem_ca_nhan_total=("diem_ca_nhan", "sum"),
+    diem_gioi_thieu_total=("diem_gioi_thieu", "sum"),
+    total_revenue=("revenue", "sum"),
+    ref_revenue_total=("ref_revenue", "sum"),
+    n_months=("month", "nunique"),
+    cap_thi_dua=("cap_thi_dua", "first"),
+    source=("source", "first"),
+).reset_index()
+
+# Total quarterly bonus
+total_q_bonus = quarterly_points.groupby(sale_col)["bonus_quy"].sum().reset_index()
+total_q_bonus.columns = [sale_col, "bonus_quy_total"]
+
+# Number of quarters in top 3
+q_top3 = quarterly_points[quarterly_points["quarter_rank"] <= 3].groupby(sale_col).size().reset_index(name="Quy top 3")
+
+# Total HD
+total_hd = df.groupby(sale_col).agg(
     n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
-    n_months=(DATE_COL, lambda x: x.dt.to_period("M").nunique()),
-)
+    chuc_danh=("Chức danh", "first") if "Chức danh" in df.columns else (sale_col, "first"),
+    channel=("Channel", "first") if "Channel" in df.columns else (sale_col, "first"),
+).reset_index()
 
-ranking["Diem quy doi"] = ranking["total_revenue"].apply(_compute_points)
+ranking = total_monthly_points.merge(total_q_bonus, on=sale_col, how="left")
+ranking = ranking.merge(q_top3, on=sale_col, how="left")
+ranking = ranking.merge(total_hd, on=sale_col, how="left")
 
-bonus_total = monthly_rev.groupby(sale_col)["rank_bonus"].sum().reset_index()
-bonus_total.columns = [sale_col, "Bonus thang"]
+ranking["bonus_quy_total"] = ranking["bonus_quy_total"].fillna(0).astype(int)
+ranking["Quy top 3"] = ranking["Quy top 3"].fillna(0).astype(int)
 
-top3_months = monthly_rev[monthly_rev["month_rank"] <= 3].groupby(sale_col).size().reset_index(name="Thang top 3")
+ranking["Diem DT"] = ranking["diem_ca_nhan_total"] + ranking["diem_gioi_thieu_total"]
+ranking["Tong diem"] = ranking["Diem DT"] + ranking["bonus_quy_total"]
 
-ranking = ranking.merge(bonus_total, on=sale_col, how="left")
-ranking = ranking.merge(top3_months, on=sale_col, how="left")
-ranking["Bonus thang"] = ranking["Bonus thang"].fillna(0).astype(int)
-ranking["Thang top 3"] = ranking["Thang top 3"].fillna(0).astype(int)
-ranking["Tong diem"] = ranking["Diem quy doi"] + ranking["Bonus thang"]
-
-ranking = ranking.sort_values("Tong diem", ascending=False).reset_index(drop=True)
+# Tiebreaker: equal points → higher total revenue wins
+ranking = ranking.sort_values(
+    ["Tong diem", "total_revenue"], ascending=[False, False]
+).reset_index(drop=True)
 ranking.insert(0, "Hang", range(1, len(ranking) + 1))
 
-# Display columns
+# Display tables by level
 disp = ranking[[
     "Hang", sale_col, "cap_thi_dua", "source", "channel",
-    "n_hd", "total_revenue", "Diem quy doi", "Bonus thang", "Tong diem",
-    "Thang top 3", "n_months"
+    "n_hd", "total_revenue", "diem_ca_nhan_total", "diem_gioi_thieu_total",
+    "Diem DT", "bonus_quy_total", "Tong diem",
+    "Quy top 3", "n_months"
 ]].copy()
 disp.columns = [
     "Hang", "Ho ten", "Cap", "Source", "Channel",
-    "So HD", "Tong doanh thu", "Diem QD", "Bonus rank", "Tong diem",
-    "Thang top 3", "Thang active"
+    "So HD", "Tong DT", "Diem CN", "Diem GT",
+    "Diem DT", "Bonus QR", "Tong diem",
+    "Quy top 3", "Thang active"
 ]
-disp["Tong doanh thu"] = disp["Tong doanh thu"].apply(lambda v: fmt_vnd(v, short=True))
+disp["Tong DT"] = disp["Tong DT"].apply(lambda v: fmt_vnd(v, short=True))
 
 tab_all, tab_gd, tab_tp, tab_cv = st.tabs(["Tat ca", "Giam Doc (Top 3)", "Truong Phong (Top 5)", "Chuyen Vien (Top 5)"])
 
@@ -416,6 +597,7 @@ with tab_gd:
     if not gd.empty:
         st.dataframe(gd.head(20), hide_index=True, use_container_width=True)
         st.success(f"Vung giai thuong: Top **3** — hien co **{min(3, len(gd))}** nguoi du dieu kien xet")
+        st.caption("*Luu y: Giam Doc xet theo KPI quan ly (se cap nhat khi co bang KPI target).*")
     else:
         empty_state("Khong co Giam Doc trong du lieu.")
 
@@ -425,6 +607,7 @@ with tab_tp:
     if not tp.empty:
         st.dataframe(tp.head(20), hide_index=True, use_container_width=True)
         st.success(f"Vung giai thuong: Top **5** — hien co **{min(5, len(tp))}** nguoi du dieu kien xet")
+        st.caption("*Luu y: Truong Phong xet theo KPI quan ly (se cap nhat khi co bang KPI target).*")
     else:
         empty_state("Khong co Truong Phong.")
 
@@ -441,7 +624,68 @@ st.divider()
 
 
 # ============================================================================
-# 4. TOP 10 BAR CHART + KHOANG CACH
+# 4. DOANH THU TEAM — GIAM DOC / TRUONG PHONG (KPI quan ly)
+# ============================================================================
+st.markdown("### KPI quan ly — Giam Doc & Truong Phong")
+st.caption("Xep hang theo tong doanh thu cua team quan ly. Tieu chi day du (>=70% KPI x 3 thang, TB >=50%) se cap nhat khi co bang KPI target.")
+
+ql_col_1 = "QUẢN LÝ CẤP 1 (BDM)"
+ql_col_2 = "QUẢN LÝ CẤP 2 (BDD)"
+
+if ql_col_1 in df.columns or ql_col_2 in df.columns:
+    col_gd_tab, col_tp_tab = st.tabs(["Giam Doc (BDD/SD/RMD)", "Truong Phong (BDM/SM/RMM)"])
+
+    with col_tp_tab:
+        if ql_col_1 in df.columns:
+            team_tp = df.groupby(ql_col_1).agg(
+                team_revenue=("Doanh thu trước thuế", "sum"),
+                n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
+                n_members=(sale_col, "nunique"),
+                n_months=(DATE_COL, lambda x: x.dt.to_period("M").nunique()),
+            ).reset_index()
+            team_tp = team_tp[team_tp[ql_col_1].notna() & (team_tp[ql_col_1] != "")]
+            team_tp = team_tp.sort_values("team_revenue", ascending=False).reset_index(drop=True)
+            team_tp.insert(0, "Hang", range(1, len(team_tp) + 1))
+            team_tp_disp = team_tp.rename(columns={
+                ql_col_1: "Truong Phong", "team_revenue": "DT Team",
+                "n_hd": "So HD", "n_members": "So TV", "n_months": "Thang"
+            })
+            team_tp_disp["DT Team"] = team_tp_disp["DT Team"].apply(lambda v: fmt_vnd(v, short=True))
+            st.dataframe(team_tp_disp, hide_index=True, use_container_width=True)
+            if len(team_tp) >= 5:
+                st.success(f"Vung giai thuong: Top **5** — hien co **{min(5, len(team_tp))}** truong phong")
+        else:
+            st.info("Khong co du lieu QUAN LY CAP 1 (BDM).")
+
+    with col_gd_tab:
+        if ql_col_2 in df.columns:
+            team_gd = df.groupby(ql_col_2).agg(
+                team_revenue=("Doanh thu trước thuế", "sum"),
+                n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
+                n_members=(sale_col, "nunique"),
+                n_months=(DATE_COL, lambda x: x.dt.to_period("M").nunique()),
+            ).reset_index()
+            team_gd = team_gd[team_gd[ql_col_2].notna() & (team_gd[ql_col_2] != "")]
+            team_gd = team_gd.sort_values("team_revenue", ascending=False).reset_index(drop=True)
+            team_gd.insert(0, "Hang", range(1, len(team_gd) + 1))
+            team_gd_disp = team_gd.rename(columns={
+                ql_col_2: "Giam Doc", "team_revenue": "DT Team",
+                "n_hd": "So HD", "n_members": "So TV", "n_months": "Thang"
+            })
+            team_gd_disp["DT Team"] = team_gd_disp["DT Team"].apply(lambda v: fmt_vnd(v, short=True))
+            st.dataframe(team_gd_disp, hide_index=True, use_container_width=True)
+            if len(team_gd) >= 3:
+                st.success(f"Vung giai thuong: Top **3** — hien co **{min(3, len(team_gd))}** giam doc")
+        else:
+            st.info("Khong co du lieu QUAN LY CAP 2 (BDD).")
+else:
+    st.info("Khong co du lieu quan ly trong dataset hien tai.")
+
+st.divider()
+
+
+# ============================================================================
+# 5. TOP 10 BAR CHART + KHOANG CACH
 # ============================================================================
 st.markdown("### Top 10 — Tong diem + Khoang cach")
 col_bar, col_gap = st.columns([3, 2])
@@ -451,16 +695,16 @@ with col_bar:
     if not top10.empty:
         fig = go.Figure()
         fig.add_trace(go.Bar(
-            y=top10[sale_col], x=top10["Diem quy doi"],
-            name="Diem doanh thu", orientation="h",
+            y=top10[sale_col], x=top10["Diem DT"],
+            name="Diem DT (CN + GT)", orientation="h",
             marker_color="#B44BC8",
-            text=top10["Diem quy doi"], textposition="inside",
+            text=top10["Diem DT"], textposition="inside",
         ))
         fig.add_trace(go.Bar(
-            y=top10[sale_col], x=top10["Bonus thang"],
-            name="Bonus rank thang", orientation="h",
+            y=top10[sale_col], x=top10["bonus_quy_total"],
+            name="Bonus rank quy", orientation="h",
             marker_color="#E85BD8",
-            text=top10["Bonus thang"], textposition="inside",
+            text=top10["bonus_quy_total"], textposition="inside",
         ))
         fig.update_layout(barmode="stack", yaxis=dict(autorange="reversed"))
         st.plotly_chart(apply_plotly_layout(fig, title="Top 10 tong diem (stacked)", height=400),
@@ -479,7 +723,7 @@ with col_gap:
                 f"**{cap}** (Top {top_n}):  \n"
                 f"Nguong vao giai: **{int(threshold)} diem**  \n"
                 f"Nguoi dau tien ngoai giai cach **{int(gap)} diem** "
-                f"(~ {fmt_vnd(gap_revenue, short=True)} doanh thu)"
+                f"(~ {fmt_vnd(gap_revenue, short=True)} DT)"
             )
         elif len(cap_df) > 0:
             st.markdown(f"**{cap}** (Top {top_n}): Chua du nguoi de so sanh")
@@ -489,7 +733,7 @@ st.divider()
 
 
 # ============================================================================
-# 5. TIEN TRINH DIEM THEO THANG (line chart)
+# 6. TIEN TRINH DIEM THEO THANG (line chart)
 # ============================================================================
 st.markdown("### Tien trinh tich luy diem theo thang")
 
@@ -514,11 +758,16 @@ st.divider()
 
 
 # ============================================================================
-# 6. HEATMAP RANK THANG
+# 7. HEATMAP RANK THANG
 # ============================================================================
 st.markdown("### Xep hang theo thang — Ai dan dau moi thang?")
 
 n_show = st.slider("So sale hien thi", min_value=5, max_value=30, value=10, key="kpi_heatmap_n")
+
+# Monthly rank by points
+monthly_rev["month_rank"] = monthly_rev.groupby("month")["diem_thang"].rank(
+    ascending=False, method="min"
+)
 
 top_n_names = ranking.head(n_show)[sale_col].tolist()
 if top_n_names:
@@ -546,7 +795,31 @@ st.divider()
 
 
 # ============================================================================
-# 7. SO SANH 1:1
+# 8. DOANH THU & DIEM GIOI THIEU
+# ============================================================================
+if has_referral and not referral_monthly.empty:
+    st.markdown("### Diem gioi thieu (Referral)")
+    st.caption("Diem tu doanh thu cua Nguoi duoc gioi thieu (moi 5 trieu = 1 diem cho Nguoi gioi thieu)")
+
+    ref_summary = referral_monthly.groupby(sale_col).agg(
+        total_ref_revenue=("ref_revenue", "sum"),
+        total_ref_points=("diem_gioi_thieu", "sum"),
+        n_months_ref=("month", "nunique"),
+    ).reset_index().sort_values("total_ref_points", ascending=False).reset_index(drop=True)
+    ref_summary.insert(0, "Hang", range(1, len(ref_summary) + 1))
+    ref_summary_disp = ref_summary.rename(columns={
+        sale_col: "Nguoi gioi thieu",
+        "total_ref_revenue": "DT referral",
+        "total_ref_points": "Diem GT",
+        "n_months_ref": "Thang co ref",
+    })
+    ref_summary_disp["DT referral"] = ref_summary_disp["DT referral"].apply(lambda v: fmt_vnd(v, short=True))
+    st.dataframe(ref_summary_disp.head(20), hide_index=True, use_container_width=True)
+    st.divider()
+
+
+# ============================================================================
+# 9. SO SANH 1:1
 # ============================================================================
 st.markdown("### So sanh 1 vs 1")
 
@@ -563,8 +836,8 @@ if len(all_sales) >= 2:
         row_a = ranking[ranking[sale_col] == sale_a].iloc[0]
         row_b = ranking[ranking[sale_col] == sale_b].iloc[0]
 
-        metrics = ["Tong diem", "Diem quy doi", "Bonus thang", "total_revenue", "n_hd", "Thang top 3"]
-        labels  = ["Tong diem", "Diem QD", "Bonus rank", "Doanh thu", "So HD", "Thang top 3"]
+        metrics = ["Tong diem", "Diem DT", "bonus_quy_total", "total_revenue", "n_hd", "Quy top 3"]
+        labels = ["Tong diem", "Diem DT", "Bonus QR", "Doanh thu", "So HD", "Quy top 3"]
 
         c1, c2, c3 = st.columns([2, 1, 2])
         with c1:
@@ -617,7 +890,7 @@ st.divider()
 
 
 # ============================================================================
-# 8. DU BAO
+# 10. DU BAO
 # ============================================================================
 st.markdown("### Du bao cuoi chu ky (uoc tinh)")
 
@@ -636,6 +909,60 @@ if months_elapsed > 0 and not ranking.empty:
     )
 else:
     st.info("Can it nhat 1 thang du lieu trong chu ky thi dua.")
+
+st.divider()
+
+
+# ============================================================================
+# 11. XUAT EXCEL
+# ============================================================================
+st.markdown("### Xuat report Excel")
+
+export_choice = st.radio(
+    "Chon bao cao",
+    options=["Bang xep hang tong hop", "Chi tiet diem theo thang", "Diem theo quy"],
+    horizontal=True,
+    key="kpi_export_choice",
+)
+
+if export_choice == "Bang xep hang tong hop":
+    export_df = ranking[[
+        "Hang", sale_col, "cap_thi_dua", "source", "channel", "n_hd",
+        "total_revenue", "diem_ca_nhan_total", "diem_gioi_thieu_total",
+        "Diem DT", "bonus_quy_total", "Tong diem", "Quy top 3", "n_months",
+    ]].copy()
+    export_df.columns = [
+        "Hang", "Ho ten", "Cap thi dua", "Source", "Channel", "So HD",
+        "Tong doanh thu", "Diem ca nhan", "Diem gioi thieu",
+        "Diem DT", "Bonus rank quy", "Tong diem", "Quy top 3", "Thang active",
+    ]
+    sheet = "BXH Tong hop"
+elif export_choice == "Chi tiet diem theo thang":
+    export_df = monthly_rev[[
+        sale_col, "month", "revenue", "diem_ca_nhan", "diem_gioi_thieu",
+        "diem_thang", "cap_thi_dua", "source"
+    ]].copy()
+    export_df["month"] = export_df["month"].astype(str)
+    export_df.columns = [
+        "Ho ten", "Thang", "Doanh thu", "Diem CN", "Diem GT",
+        "Diem thang", "Cap thi dua", "Source"
+    ]
+    export_df = export_df.sort_values(["Thang", "Diem thang"], ascending=[True, False])
+    sheet = "Diem theo thang"
+else:
+    export_df = quarterly_points.copy()
+    export_df.columns = ["Ho ten", "Quy", "Diem quy", "Hang quy", "Bonus quy"]
+    export_df = export_df.sort_values(["Quy", "Hang quy"])
+    sheet = "Diem theo quy"
+
+excel_data = _export_excel(export_df, sheet_name=sheet)
+st.download_button(
+    label=f"Tai Excel — {export_choice}",
+    data=excel_data,
+    file_name=f"KPI_Competition_{sheet.replace(' ', '_')}_{today.strftime('%Y%m%d')}.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    key="kpi_download_excel",
+)
 
 st.divider()
 

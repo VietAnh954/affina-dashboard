@@ -62,6 +62,7 @@ SERVING_COLUMNS = [
     "rate_bonus", "Affina_rate_bonus", "exchange_core",
     "Tên NĐBH", "Giới tính NNBH", "CCCD NĐBH",
     "Tên NMBH", "CCCD NMBH", "Quan hệ", "SĐT NMBH", "Email NMBH", "Địa chỉ NMBH",
+    "Người giới thiệu",
     "_ingested_at",
 ]
 

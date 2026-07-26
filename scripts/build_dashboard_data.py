@@ -346,7 +346,8 @@ def clean_data(sheet_io, dsns_io, qd_io):
         "Số CMND_CCCD NMBH", "Số tiền thanh toán", "Channel", "Tên Người được BH",
         "Số hộ chiếu", "CCCD", "Ngày Sinh NNBH", "Giới tính NNBH", "Địa chỉ NMBH",
         "Phone Khách hàng", "Email", "Ngày bắt đầu", "Ngày kết thúc", "Loại bảo hiểm",
-        "Số hợp đồng", "Tên NMBH", "Ngày sinh NMBH", "Địa chỉ"
+        "Số hợp đồng", "Tên NMBH", "Ngày sinh NMBH", "Địa chỉ",
+        "Người giới thiệu",
     ]
     df_BHSK = df_BHSK[[c for c in keep_bhsk if c in df_BHSK.columns]]
 
@@ -542,7 +543,8 @@ def run_duckdb_queries(df_ns, qd1, df_union):
                TRY_CAST(uadcd."Ngày Sinh NNBH" AS DATE) AS "Ngày Sinh NNBH",
                TRY_CAST(uadcd."Ngày sinh NMBH" AS DATE) AS "Ngày sinh NMBH",
                uadcd."CCCD", uadcd."Ngoại trú", uadcd."Giới tính NNBH",
-               uadcd."Nha khoa", uadcd."Thai sản", uadcd."Topup"
+               uadcd."Nha khoa", uadcd."Thai sản", uadcd."Topup",
+               uadcd."Người giới thiệu"
         FROM df_ns dnsa
         JOIN df_union uadcd
           ON TRIM(LEADING '0' FROM dnsa."Điện thoại") = TRIM(LEADING '0' FROM uadcd."Code sale")
@@ -563,7 +565,8 @@ def run_duckdb_queries(df_ns, qd1, df_union):
                "Tên NMBH", "Quan hệ",
                "Ngày Sinh NNBH" AS "Ngày sinh NĐBH", "Ngày sinh NMBH",
                "CCCD" AS "CCCD NĐBH", "Ngoại trú", "Nha khoa",
-               "Giới tính NNBH", "Thai sản", "Topup"
+               "Giới tính NNBH", "Thai sản", "Topup",
+               "Người giới thiệu"
         FROM t1
     ),
     final_result AS (
@@ -638,7 +641,8 @@ def run_duckdb_queries(df_ns, qd1, df_union):
                TRY_CAST(uadcd."Ngày Sinh NNBH" AS DATE) AS "Ngày Sinh NNBH",
                TRY_CAST(uadcd."Ngày sinh NMBH" AS DATE) AS "Ngày sinh NMBH",
                uadcd."CCCD", uadcd."Ngoại trú", uadcd."Giới tính NNBH",
-               uadcd."Nha khoa", uadcd."Thai sản", uadcd."Topup"
+               uadcd."Nha khoa", uadcd."Thai sản", uadcd."Topup",
+               uadcd."Người giới thiệu"
         FROM df_ns dnsa
         JOIN df_union uadcd
           ON TRIM(LEADING '0' FROM dnsa."Điện thoại") = TRIM(LEADING '0' FROM uadcd."Code sale")
@@ -659,7 +663,8 @@ def run_duckdb_queries(df_ns, qd1, df_union):
                "Tên NMBH", "Quan hệ",
                "Ngày Sinh NNBH" AS "Ngày sinh NĐBH", "Ngày sinh NMBH",
                "CCCD" AS "CCCD NĐBH", "Ngoại trú", "Nha khoa",
-               "Giới tính NNBH", "Thai sản", "Topup"
+               "Giới tính NNBH", "Thai sản", "Topup",
+               "Người giới thiệu"
         FROM t1
     ),
     final_result AS (
@@ -727,6 +732,7 @@ def run_duckdb_queries(df_ns, qd1, df_union):
                a."Tên Người được BH" AS "Tên NĐBH",
                TRY_CAST(a."Ngày bắt đầu" AS DATE) AS "Ngày bắt đầu",
                a."Code sale" AS "SĐT sale",
+               a."Người giới thiệu",
                qd."Affina_rate_bonus",
                ROUND(CAST(a."Số tiền thanh toán" AS DOUBLE) / (CAST(qd."Thuế" AS DOUBLE) + 1), 0) AS "Doanh thu trước thuế",
                CASE WHEN UPPER(a."Channel") = 'RENEW' THEN 0.03
@@ -751,7 +757,8 @@ def run_duckdb_queries(df_ns, qd1, df_union):
            "Tên NMBH", "Quan hệ", "Ngày sinh NĐBH", "Ngày sinh NMBH",
            "CCCD NĐBH", "CCCD NMBH", "Ngoại trú", "Giới tính NNBH",
            "Nha khoa", "Thai sản", "Topup", "Tên NĐBH", "Ngày bắt đầu",
-           "SĐT sale", "bonus_rate", "Teamlead_rate", "Affina_rate_bonus", "Affina_Revenue",
+           "SĐT sale", "Người giới thiệu",
+           "bonus_rate", "Teamlead_rate", "Affina_rate_bonus", "Affina_Revenue",
            CASE
                WHEN (TRY_CAST("Ngày thanh toán" AS DATE) BETWEEN DATE '2025-07-18' AND DATE '2025-08-31')
                     AND ("Sản phẩm" LIKE '%B-One_new%' OR "Sản phẩm" LIKE '%B-One_Renew%')
@@ -932,6 +939,7 @@ SERVING_COLUMNS = [
     "rate_bonus", "Affina_rate_bonus", "exchange_core",
     "Tên NĐBH", "Giới tính NNBH", "CCCD NĐBH",
     "Tên NMBH", "CCCD NMBH", "Quan hệ", "SĐT NMBH", "Email NMBH", "Địa chỉ NMBH",
+    "Người giới thiệu",
     "_ingested_at",
 ]
 
