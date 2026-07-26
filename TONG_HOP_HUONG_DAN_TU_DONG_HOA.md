@@ -190,7 +190,7 @@ Lỗi 403: access_denied
 
 **Lỗi:**
 ```
-FileNotFoundError: Không tìm thấy file DSNS CTV sale Affina NEW - HR NHẬP.xlsx trên Google Drive!
+FileNotFoundError: Không tìm thấy file DSNS CTV sale Affina FINAL V2.xlsx trên Google Drive!
 ```
 
 **Nguyên nhân:** Trong notebook Colab, file DSNS nằm ở `Othercomputers/My Laptop/Nhân sự sales/` và được copy sang `MyDrive/AFFINA/Data/`. Trên GitHub Actions, không có bước copy này, và hàm `find_file_in_drive()` chỉ tìm trong folder "Data".
@@ -357,4 +357,4 @@ git add -A && git commit -m "Schedule: 20:00 VN" && git push origin main
 - **Supabase tables:** `qd1`, `ds_nhan_su_affina`, `union_all_data_cap_don`
 - **Google Sheet ID (Cấp đơn):** `1qc_QhrvpoLLp6w9RkGBEkm8qBO49GJE8oMlwkCdJOsk`
 - **Output folders trên Drive:** `AFFINA/Report/Report_Daily/An/`, `AFFINA/Report/Report_Daily/Loan/`, `Report_daily_An/`, `Report_daily_Loan/`
-- **Input files:** `DSNS CTV sale Affina NEW - HR NHẬP.xlsx` (folder Data hoặc Nhân sự sales), `26_02_04_sửa ngày_quy_doi_all.xlsx` (folder Data)
+- **Input files:** `DSNS CTV sale Affina FINAL V2.xlsx` (folder Data hoặc Nhân sự sales), `26_02_04_sửa ngày_quy_doi_all.xlsx` (folder Data)

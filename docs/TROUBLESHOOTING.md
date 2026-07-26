@@ -141,7 +141,7 @@ except Exception as e:
 
 ### 2.4 `FileNotFoundError: Không tìm thấy file DSNS...`
 
-**Nguyên nhân:** File `DSNS CTV sale Affina NEW - HR NHẬP.xlsx` không ở folder `Data`.
+**Nguyên nhân:** File `DSNS CTV sale Affina FINAL V2.xlsx` không ở folder `Data`.
 
 **Fix:** Script `build_dashboard_data.py` đã tự fallback tìm ở folder `Nhân sự sales` rồi tìm toàn Drive. Nếu vẫn không thấy:
 

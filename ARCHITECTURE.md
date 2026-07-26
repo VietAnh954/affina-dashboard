@@ -74,7 +74,7 @@ Mặc dù File 3 gốc đã có bước xuất Google Sheet cho Looker Studio, V
                   │   Google Drive (nguồn gốc)         │
                   │   ─────────────────────             │
                   │   • Google Sheet "Cấp đơn"          │
-                  │   • DSNS CTV sale Affina.xlsx       │
+                  │   • DSNS CTV sale Affina FINAL V2   │
                   │   • Quy đổi.xlsx                    │
                   └───────────────┬────────────────────┘
                                   │  OAuth Refresh Token

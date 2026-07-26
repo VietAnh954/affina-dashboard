@@ -24,7 +24,7 @@ VietAnh làm việc tại **Affina** (công ty bảo hiểm), phụ trách repor
 4. ✅ **Google Sheet ID (Cấp đơn)**: `1qc_QhrvpoLLp6w9RkGBEkm8qBO49GJE8oMlwkCdJOsk`
 
 5. ✅ **Google Drive files**:
-   - `DSNS CTV sale Affina NEW - HR NHẬP.xlsx` (folder `Data` hoặc `Nhân sự sales`)
+   - `DSNS CTV sale Affina FINAL V2.xlsx` (folder `Data` hoặc `Nhân sự sales`)
    - `26_02_04_sửa ngày_quy_doi_all.xlsx` (folder `Data`)
 
 6. ✅ Một job GitHub Actions khác đang chạy hàng ngày 17:00 VN (report AN/LOAN) — **KHÔNG được đụng vào**.
