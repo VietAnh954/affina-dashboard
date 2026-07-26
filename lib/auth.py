@@ -46,10 +46,10 @@ ROLE_PAGES = {
     "admin": "__all__",
     "head": [
         "home", "kenh", "sales", "time", "export",
-        "headsale", "executive", "customer", "forecast", "kpi",
+        "headsale", "executive", "customer", "forecast", "kpi", "recruitment",
     ],
     "sale": [
-        "home", "kenh", "sales", "time", "export", "kpi",
+        "home", "kenh", "sales", "time", "export", "kpi", "recruitment",
     ],
 }
 

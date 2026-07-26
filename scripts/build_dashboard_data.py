@@ -1058,8 +1058,21 @@ def main():
 
     engine = create_engine(SUPABASE_DB_URI, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 30, "keepalives": 1, "keepalives_idle": 30, "keepalives_interval": 10, "keepalives_count": 5})
 
-    # Phase 0: bỏ push 3 bảng nguồn — dashboard không dùng, chỉ tốn Supabase resources
+    # Phase 0: bỏ push 3 bảng nguồn đầy đủ — dashboard không dùng, chỉ tốn resources
     # push_sources_to_supabase(engine, df_ns, qd1, df_union)
+
+    # Push DSNS trimmed (chỉ cột cần cho recruitment contest + mapping)
+    dsns_cols_keep = [
+        "Họ tên", "Điện thoại", "Chức danh", "Channal", "Status",
+        "Thời gian bắt đầu", "Code người giới thiệu", "Người giới thiệu",
+        "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)", "Quản lý Cấp 3 (BDH)",
+    ]
+    dsns_trim = df_ns[[c for c in dsns_cols_keep if c in df_ns.columns]].copy()
+    try:
+        _push_with_retry(engine, dsns_trim, "ds_nhan_su_trim")
+        log("  [OK] ds_nhan_su_trim (recruitment data)")
+    except Exception as e:
+        log(f"  [WARN] Push ds_nhan_su_trim lỗi (không blocking): {e}")
 
     df_core, df_neo, df_tsa = run_duckdb_queries(df_ns, qd1, df_union)
     df_master = combine_master(df_core, df_neo, df_tsa)
