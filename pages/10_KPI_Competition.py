@@ -6,9 +6,15 @@ Chương trình thi đua: 01/04/2026 - 31/03/2027
 13 suất du lịch Trung Quốc
 
 Cấp bậc:
-  - Giám Đốc (BDD/SD-RMD/TSA Manager): Top 3 KPI QL, >=70% x 3 tháng, TB >=50%
-  - Trưởng Phòng (BDM/SM-RMM/TSA TL):  Top 5 KPI QL, >=70% x 3 tháng, TB >=50%
+  - Giám Đốc (BDD): Top 3 KPI QL, >=70% x 3 tháng, TB >=50%
+  - Trưởng Phòng (BDM): Top 5 KPI QL, >=70% x 3 tháng, TB >=50%
   - Chuyên Viên (CVKD/AG-RMC/CTV TSA):  Top 5 điểm quy đổi
+
+KPI Quản lý (CORE only):
+  - BDM (Trưởng Phòng): target 200,000,000 VNĐ/tháng (Số tiền thanh toán team)
+  - BDD (Giám Đốc):     target 450,000,000 VNĐ/tháng (Số tiền thanh toán team)
+  - NEO/TSA: chỉ xếp hạng theo DT team, không tính % KPI
+  - BDH: không tham gia
 
 Tính điểm Chuyên Viên:
   - Mỗi 5 triệu doanh thu cá nhân = 1 điểm (tính theo tháng)
@@ -203,15 +209,20 @@ with st.expander("**THE LE THI DUA — CLB Tinh Hoa Affina 2026-2027**", expande
     with col_right:
         st.markdown("#### Tieu chi xet thuong")
         st.markdown("""
-**Giam Doc** (Top 3):
-- Top 03 co ket qua KPI quan ly cao nhat
+**Giam Doc — CORE BDD** (Top 3):
+- KPI target: **450,000,000 VND/thang** (So tien thanh toan cua team)
 - Dat >= 70% KPI hang thang trong it nhat 03 thang
-- Tong ket qua trung binh cac thang >= 50% KPI
+- Trung binh cac thang >= 50% KPI
+- Xep hang theo trung binh KPI %
 
-**Truong Phong** (Top 5):
-- Top 05 co ket qua KPI quan ly cao nhat
+**Truong Phong — CORE BDM** (Top 5):
+- KPI target: **200,000,000 VND/thang** (So tien thanh toan cua team)
 - Dat >= 70% KPI hang thang trong it nhat 03 thang
-- Tong ket qua trung binh cua cac thang >= 50%
+- Trung binh cac thang >= 50% KPI
+- Xep hang theo trung binh KPI %
+
+**NEO/TSA** (SM, SD, Teamlead, Manager):
+- Xep hang theo tong doanh thu team (khong ap dung % KPI)
 
 **Chuyen Vien KD** (Top 5):
 - Top 05 co tong diem quy doi cao nhat
@@ -597,7 +608,7 @@ with tab_gd:
     if not gd.empty:
         st.dataframe(gd.head(20), hide_index=True, use_container_width=True)
         st.success(f"Vung giai thuong: Top **3** — hien co **{min(3, len(gd))}** nguoi du dieu kien xet")
-        st.caption("*Luu y: Giam Doc xet theo KPI quan ly (se cap nhat khi co bang KPI target).*")
+        st.caption("*Giam Doc CORE xet theo KPI quan ly (muc 4 ben duoi). NEO/TSA xep hang theo DT team.*")
     else:
         empty_state("Khong co Giam Doc trong du lieu.")
 
@@ -607,7 +618,7 @@ with tab_tp:
     if not tp.empty:
         st.dataframe(tp.head(20), hide_index=True, use_container_width=True)
         st.success(f"Vung giai thuong: Top **5** — hien co **{min(5, len(tp))}** nguoi du dieu kien xet")
-        st.caption("*Luu y: Truong Phong xet theo KPI quan ly (se cap nhat khi co bang KPI target).*")
+        st.caption("*Truong Phong CORE xet theo KPI quan ly (muc 4 ben duoi). NEO/TSA xep hang theo DT team.*")
     else:
         empty_state("Khong co Truong Phong.")
 
@@ -624,60 +635,172 @@ st.divider()
 
 
 # ============================================================================
-# 4. DOANH THU TEAM — GIAM DOC / TRUONG PHONG (KPI quan ly)
+# 4. KPI QUAN LY — GIAM DOC & TRUONG PHONG
 # ============================================================================
 st.markdown("### KPI quan ly — Giam Doc & Truong Phong")
-st.caption("Xep hang theo tong doanh thu cua team quan ly. Tieu chi day du (>=70% KPI x 3 thang, TB >=50%) se cap nhat khi co bang KPI target.")
 
 ql_col_1 = "QUẢN LÝ CẤP 1 (BDM)"
 ql_col_2 = "QUẢN LÝ CẤP 2 (BDD)"
+kpi_revenue_col = "Số tiền thanh toán"
+
+KPI_TARGETS = {
+    "BDM": 200_000_000,
+    "BDD": 450_000_000,
+}
 
 if ql_col_1 in df.columns or ql_col_2 in df.columns:
-    col_gd_tab, col_tp_tab = st.tabs(["Giam Doc (BDD/SD/RMD)", "Truong Phong (BDM/SM/RMM)"])
 
-    with col_tp_tab:
-        if ql_col_1 in df.columns:
-            team_tp = df.groupby(ql_col_1).agg(
-                team_revenue=("Doanh thu trước thuế", "sum"),
-                n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
-                n_members=(sale_col, "nunique"),
-                n_months=(DATE_COL, lambda x: x.dt.to_period("M").nunique()),
-            ).reset_index()
-            team_tp = team_tp[team_tp[ql_col_1].notna() & (team_tp[ql_col_1] != "")]
-            team_tp = team_tp.sort_values("team_revenue", ascending=False).reset_index(drop=True)
-            team_tp.insert(0, "Hang", range(1, len(team_tp) + 1))
-            team_tp_disp = team_tp.rename(columns={
+    # ── Helper: compute monthly KPI % for a manager column (CORE only) ──
+    def _compute_kpi_monthly(data: pd.DataFrame, ql_col: str, target: int) -> pd.DataFrame:
+        """Group by manager + month, sum Số tiền thanh toán, compute KPI %."""
+        if ql_col not in data.columns or kpi_revenue_col not in data.columns:
+            return pd.DataFrame()
+        core_data = data[data["Channel"].str.lower().str.strip() == "core"] if "Channel" in data.columns else data
+        if core_data.empty:
+            return pd.DataFrame()
+        monthly = core_data.groupby([ql_col, "month"]).agg(
+            team_revenue=(kpi_revenue_col, "sum"),
+        ).reset_index()
+        monthly = monthly[monthly[ql_col].notna() & (monthly[ql_col].str.strip() != "")]
+        monthly["kpi_pct"] = monthly["team_revenue"] / target * 100
+        monthly["dat_70"] = monthly["kpi_pct"] >= 70
+        return monthly
+
+    def _build_kpi_ranking(monthly_kpi: pd.DataFrame, ql_col: str) -> pd.DataFrame:
+        """From monthly KPI data, compute ranking with eligibility conditions."""
+        if monthly_kpi.empty:
+            return pd.DataFrame()
+        summary = monthly_kpi.groupby(ql_col).agg(
+            tb_kpi=("kpi_pct", "mean"),
+            tong_kpi=("kpi_pct", "sum"),
+            so_thang_70=("dat_70", "sum"),
+            so_thang=("month", "nunique"),
+            tong_dt_team=("team_revenue", "sum"),
+        ).reset_index()
+        summary["du_dk"] = (summary["so_thang_70"] >= 3) & (summary["tb_kpi"] >= 50)
+        summary = summary.sort_values(
+            ["du_dk", "tb_kpi", "tong_dt_team"], ascending=[False, False, False]
+        ).reset_index(drop=True)
+        summary.insert(0, "Hang", range(1, len(summary) + 1))
+        return summary
+
+    # ── Compute KPI for CORE BDM (Trưởng Phòng) and BDD (Giám Đốc) ──
+    kpi_monthly_tp = _compute_kpi_monthly(df, ql_col_1, KPI_TARGETS["BDM"])
+    kpi_monthly_gd = _compute_kpi_monthly(df, ql_col_2, KPI_TARGETS["BDD"])
+    kpi_rank_tp = _build_kpi_ranking(kpi_monthly_tp, ql_col_1)
+    kpi_rank_gd = _build_kpi_ranking(kpi_monthly_gd, ql_col_2)
+
+    # ── NEO/TSA: rank by total team revenue only ──
+    def _team_revenue_ranking(data: pd.DataFrame, ql_col: str, exclude_channel: str = "core") -> pd.DataFrame:
+        if ql_col not in data.columns:
+            return pd.DataFrame()
+        non_core = data[data["Channel"].str.lower().str.strip() != exclude_channel] if "Channel" in data.columns else pd.DataFrame()
+        if non_core.empty:
+            return pd.DataFrame()
+        team = non_core.groupby(ql_col).agg(
+            team_revenue=("Doanh thu trước thuế", "sum"),
+            n_members=(sale_col, "nunique"),
+            n_months=(DATE_COL, lambda x: x.dt.to_period("M").nunique()),
+        ).reset_index()
+        team = team[team[ql_col].notna() & (team[ql_col].str.strip() != "")]
+        team = team.sort_values("team_revenue", ascending=False).reset_index(drop=True)
+        team.insert(0, "Hang", range(1, len(team) + 1))
+        return team
+
+    neo_tsa_tp = _team_revenue_ranking(df, ql_col_1)
+    neo_tsa_gd = _team_revenue_ranking(df, ql_col_2)
+
+    # ── Display ──
+    tab_kpi_gd, tab_kpi_tp = st.tabs(["Giam Doc — CORE (BDD)", "Truong Phong — CORE (BDM)"])
+
+    with tab_kpi_tp:
+        st.caption(f"KPI target: **{fmt_vnd(KPI_TARGETS['BDM'])}**/thang (So tien thanh toan team) | DK: >=70% x 3 thang, TB >=50%")
+        if not kpi_rank_tp.empty:
+            disp_tp = kpi_rank_tp.copy()
+            disp_tp["tb_kpi"] = disp_tp["tb_kpi"].apply(lambda x: f"{x:.1f}%")
+            disp_tp["du_dk"] = disp_tp["du_dk"].map({True: "Dat", False: "Chua"})
+            disp_tp["tong_dt_team"] = disp_tp["tong_dt_team"].apply(lambda v: fmt_vnd(v, short=True))
+            disp_tp = disp_tp.rename(columns={
+                ql_col_1: "Truong Phong", "tb_kpi": "TB KPI %",
+                "so_thang_70": "Thang >=70%", "so_thang": "Thang",
+                "tong_dt_team": "Tong DT Team", "du_dk": "Du dieu kien",
+            })
+            disp_tp = disp_tp.drop(columns=["tong_kpi"], errors="ignore")
+            st.dataframe(disp_tp, hide_index=True, use_container_width=True)
+            n_eligible = int(kpi_rank_tp["du_dk"].sum())
+            st.success(f"Vung giai thuong: Top **5** — hien co **{n_eligible}** nguoi du dieu kien")
+
+            # Monthly KPI detail (expandable)
+            with st.expander("Chi tiet KPI % theo thang (CORE BDM)"):
+                if not kpi_monthly_tp.empty:
+                    pivot_tp = kpi_monthly_tp.pivot_table(
+                        index=ql_col_1, columns="month", values="kpi_pct", aggfunc="first"
+                    ).reset_index()
+                    month_cols_tp = [c for c in pivot_tp.columns if isinstance(c, pd.Period)]
+                    rename_m = {m: f"T{m.month:02d}/{m.year}" for m in month_cols_tp}
+                    pivot_tp = pivot_tp.rename(columns={**rename_m, ql_col_1: "Truong Phong"})
+                    for mc in rename_m.values():
+                        if mc in pivot_tp.columns:
+                            pivot_tp[mc] = pivot_tp[mc].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "-")
+                    st.dataframe(pivot_tp, hide_index=True, use_container_width=True)
+        else:
+            st.info("Khong co du lieu CORE BDM de tinh KPI.")
+
+        # NEO/TSA Trưởng Phòng — revenue only
+        if not neo_tsa_tp.empty:
+            st.markdown("---")
+            st.markdown("**NEO / TSA — Truong Phong** (xep hang theo DT team, khong tinh % KPI)")
+            neo_tsa_tp_disp = neo_tsa_tp.rename(columns={
                 ql_col_1: "Truong Phong", "team_revenue": "DT Team",
-                "n_hd": "So HD", "n_members": "So TV", "n_months": "Thang"
+                "n_members": "So TV", "n_months": "Thang"
             })
-            team_tp_disp["DT Team"] = team_tp_disp["DT Team"].apply(lambda v: fmt_vnd(v, short=True))
-            st.dataframe(team_tp_disp, hide_index=True, use_container_width=True)
-            if len(team_tp) >= 5:
-                st.success(f"Vung giai thuong: Top **5** — hien co **{min(5, len(team_tp))}** truong phong")
-        else:
-            st.info("Khong co du lieu QUAN LY CAP 1 (BDM).")
+            neo_tsa_tp_disp["DT Team"] = neo_tsa_tp_disp["DT Team"].apply(lambda v: fmt_vnd(v, short=True))
+            st.dataframe(neo_tsa_tp_disp, hide_index=True, use_container_width=True)
 
-    with col_gd_tab:
-        if ql_col_2 in df.columns:
-            team_gd = df.groupby(ql_col_2).agg(
-                team_revenue=("Doanh thu trước thuế", "sum"),
-                n_hd=("Số hợp đồng", "nunique") if "Số hợp đồng" in df.columns else (sale_col, "count"),
-                n_members=(sale_col, "nunique"),
-                n_months=(DATE_COL, lambda x: x.dt.to_period("M").nunique()),
-            ).reset_index()
-            team_gd = team_gd[team_gd[ql_col_2].notna() & (team_gd[ql_col_2] != "")]
-            team_gd = team_gd.sort_values("team_revenue", ascending=False).reset_index(drop=True)
-            team_gd.insert(0, "Hang", range(1, len(team_gd) + 1))
-            team_gd_disp = team_gd.rename(columns={
-                ql_col_2: "Giam Doc", "team_revenue": "DT Team",
-                "n_hd": "So HD", "n_members": "So TV", "n_months": "Thang"
+    with tab_kpi_gd:
+        st.caption(f"KPI target: **{fmt_vnd(KPI_TARGETS['BDD'])}**/thang (So tien thanh toan team) | DK: >=70% x 3 thang, TB >=50%")
+        if not kpi_rank_gd.empty:
+            disp_gd = kpi_rank_gd.copy()
+            disp_gd["tb_kpi"] = disp_gd["tb_kpi"].apply(lambda x: f"{x:.1f}%")
+            disp_gd["du_dk"] = disp_gd["du_dk"].map({True: "Dat", False: "Chua"})
+            disp_gd["tong_dt_team"] = disp_gd["tong_dt_team"].apply(lambda v: fmt_vnd(v, short=True))
+            disp_gd = disp_gd.rename(columns={
+                ql_col_2: "Giam Doc", "tb_kpi": "TB KPI %",
+                "so_thang_70": "Thang >=70%", "so_thang": "Thang",
+                "tong_dt_team": "Tong DT Team", "du_dk": "Du dieu kien",
             })
-            team_gd_disp["DT Team"] = team_gd_disp["DT Team"].apply(lambda v: fmt_vnd(v, short=True))
-            st.dataframe(team_gd_disp, hide_index=True, use_container_width=True)
-            if len(team_gd) >= 3:
-                st.success(f"Vung giai thuong: Top **3** — hien co **{min(3, len(team_gd))}** giam doc")
+            disp_gd = disp_gd.drop(columns=["tong_kpi"], errors="ignore")
+            st.dataframe(disp_gd, hide_index=True, use_container_width=True)
+            n_eligible_gd = int(kpi_rank_gd["du_dk"].sum())
+            st.success(f"Vung giai thuong: Top **3** — hien co **{n_eligible_gd}** nguoi du dieu kien")
+
+            # Monthly KPI detail (expandable)
+            with st.expander("Chi tiet KPI % theo thang (CORE BDD)"):
+                if not kpi_monthly_gd.empty:
+                    pivot_gd = kpi_monthly_gd.pivot_table(
+                        index=ql_col_2, columns="month", values="kpi_pct", aggfunc="first"
+                    ).reset_index()
+                    month_cols_gd = [c for c in pivot_gd.columns if isinstance(c, pd.Period)]
+                    rename_m_gd = {m: f"T{m.month:02d}/{m.year}" for m in month_cols_gd}
+                    pivot_gd = pivot_gd.rename(columns={**rename_m_gd, ql_col_2: "Giam Doc"})
+                    for mc in rename_m_gd.values():
+                        if mc in pivot_gd.columns:
+                            pivot_gd[mc] = pivot_gd[mc].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "-")
+                    st.dataframe(pivot_gd, hide_index=True, use_container_width=True)
         else:
-            st.info("Khong co du lieu QUAN LY CAP 2 (BDD).")
+            st.info("Khong co du lieu CORE BDD de tinh KPI.")
+
+        # NEO/TSA Giám Đốc — revenue only
+        if not neo_tsa_gd.empty:
+            st.markdown("---")
+            st.markdown("**NEO / TSA — Giam Doc** (xep hang theo DT team, khong tinh % KPI)")
+            neo_tsa_gd_disp = neo_tsa_gd.rename(columns={
+                ql_col_2: "Giam Doc", "team_revenue": "DT Team",
+                "n_members": "So TV", "n_months": "Thang"
+            })
+            neo_tsa_gd_disp["DT Team"] = neo_tsa_gd_disp["DT Team"].apply(lambda v: fmt_vnd(v, short=True))
+            st.dataframe(neo_tsa_gd_disp, hide_index=True, use_container_width=True)
+
 else:
     st.info("Khong co du lieu quan ly trong dataset hien tai.")
 
