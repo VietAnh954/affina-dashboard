@@ -501,51 +501,110 @@ if has_dsns:
     st.divider()
 
     # ============================================================================
-    # CHARTS
+    # CHARTS — TONG QUAN
     # ============================================================================
-    st.markdown("### Thong ke tuyen dung")
+    st.markdown("### Thong ke tong quan tuyen dung")
+
+    # ── Chart 1 & 2: Pie + Bar overview (with shared filter) ──
+    ch_ov_f1, ch_ov_f2 = st.columns(2)
+    with ch_ov_f1:
+        ov_channel_opts = ["Tat ca"] + sorted(new_joiners["Channal"].dropna().unique().tolist()) if "Channal" in new_joiners.columns else ["Tat ca"]
+        ov_ch_filter = st.selectbox("Kenh (tong quan)", options=ov_channel_opts, index=0, key="ov_ch_f")
+    with ch_ov_f2:
+        ov_same_filter = st.selectbox("Chi ngang cap?", options=["Tat ca", "Chi ngang cap", "Chi khac cap"], index=0, key="ov_same_f")
+
+    ov_data = new_joiners.copy()
+    if ov_ch_filter != "Tat ca" and "Channal" in ov_data.columns:
+        ov_data = ov_data[ov_data["Channal"] == ov_ch_filter]
+    if ov_same_filter == "Chi ngang cap":
+        ov_data = ov_data[ov_data["is_same_level"]]
+    elif ov_same_filter == "Chi khac cap":
+        ov_data = ov_data[~ov_data["is_same_level"]]
 
     col_chart1, col_chart2 = st.columns(2)
-
     with col_chart1:
-        if not new_joiners.empty:
-            by_level = new_joiners.groupby("level").size().reset_index(name="count")
+        if not ov_data.empty:
+            by_level = ov_data.groupby("level").size().reset_index(name="count")
             by_level["level_label"] = by_level["level"].map(LEVEL_LABELS)
             fig = px.pie(
                 by_level, names="level_label", values="count",
                 color_discrete_sequence=["#B44BC8", "#F06EC2", "#8B6FC9"],
             )
             fig.update_traces(textposition="inside", textinfo="value+percent")
-            st.plotly_chart(
-                apply_plotly_layout(fig, title="Nguoi moi theo cap bac", height=350),
-                use_container_width=True
-            )
+            st.plotly_chart(apply_plotly_layout(fig, title="Nguoi moi theo cap bac", height=350), use_container_width=True)
+        else:
+            empty_state("Khong co du lieu.")
 
     with col_chart2:
-        if not valid_referrals.empty and "Channal" in valid_referrals.columns:
-            channel_col = "Channal"
-            by_channel = valid_referrals.groupby(channel_col).size().reset_index(name="count")
+        if not ov_data.empty and "Channal" in ov_data.columns:
+            by_channel = ov_data.groupby("Channal").size().reset_index(name="count")
             fig2 = px.bar(
-                by_channel, x=channel_col, y="count",
-                color=channel_col,
+                by_channel, x="Channal", y="count", color="Channal",
                 color_discrete_map={"Core": COLORS["Core"], "Neo": COLORS["Neo"], "TSA": COLORS["TSA"]},
             )
             fig2.update_layout(showlegend=False)
-            st.plotly_chart(
-                apply_plotly_layout(fig2, title="Tuyen dung theo kenh", height=350),
-                use_container_width=True
-            )
-        elif not valid_referrals.empty:
-            st.info("Khong co du lieu Channel.")
+            st.plotly_chart(apply_plotly_layout(fig2, title="Tuyen dung theo kenh", height=350), use_container_width=True)
+        else:
+            empty_state("Khong co du lieu Channel.")
 
-    # Revenue progress chart for CV level
+    st.divider()
+
+    # ── Chart 3: Funnel — Tong tuyen → Ngang cap → Dat DT → Dat DK ──
+    st.markdown("### Funnel tuyen dung")
+    fn_f1, fn_f2 = st.columns(2)
+    with fn_f1:
+        fn_level = st.selectbox("Cap bac (funnel)", options=["Tat ca", "Chuyen Vien", "Truong Phong", "Giam Doc"], index=0, key="fn_lv_f")
+    with fn_f2:
+        fn_ch = st.selectbox("Kenh (funnel)", options=ov_channel_opts, index=0, key="fn_ch_f")
+
+    fn_data = new_joiners.copy()
+    if fn_level != "Tat ca":
+        fn_data = fn_data[fn_data["level"] == fn_level]
+    if fn_ch != "Tat ca" and "Channal" in fn_data.columns:
+        fn_data = fn_data[fn_data["Channal"] == fn_ch]
+
+    if not fn_data.empty:
+        funnel_stages = [
+            ("Tong nguoi moi T06", len(fn_data)),
+            ("Co nguoi gioi thieu", fn_data["recruiter_name"].notna().sum()),
+            ("Ngang cap", fn_data["is_same_level"].sum()),
+            ("Dat dieu kien", (fn_data["trang_thai"] == "DAT").sum()),
+        ]
+        fig_fn = go.Figure(go.Funnel(
+            y=[s[0] for s in funnel_stages],
+            x=[s[1] for s in funnel_stages],
+            textinfo="value+percent initial",
+            marker=dict(color=["#8B6FC9", "#B44BC8", "#F06EC2", "#5FBFA0"]),
+        ))
+        st.plotly_chart(apply_plotly_layout(fig_fn, title="", height=350), use_container_width=True)
+    else:
+        empty_state("Khong co du lieu.")
+
+    st.divider()
+
+    # ── Chart 4: Tien do DT Chuyen Vien moi (target 5 trieu) ──
+    st.markdown("### Tien do DT Chuyen Vien moi")
+    cv_f1, cv_f2, cv_f3 = st.columns(3)
+    with cv_f1:
+        cv_ch = st.selectbox("Kenh (CV)", options=ov_channel_opts, index=0, key="cv_ch_f")
+    with cv_f2:
+        cv_status = st.selectbox("Trang thai (CV)", options=["Tat ca", "Dat", "Chua dat"], index=0, key="cv_st_f")
+    with cv_f3:
+        cv_n_show = st.slider("So nguoi hien thi", min_value=5, max_value=50, value=20, key="cv_n_show")
+
     cv_joiners = new_joiners[(new_joiners["level"] == "Chuyen Vien") & (new_joiners["is_same_level"])].copy()
+    if cv_ch != "Tat ca" and "Channal" in cv_joiners.columns:
+        cv_joiners = cv_joiners[cv_joiners["Channal"] == cv_ch]
+    cv_joiners["pct_target"] = (cv_joiners["joiner_revenue_to_jul"] / CONDITION_CV_REVENUE * 100).clip(0, 200)
+    if cv_status == "Dat":
+        cv_joiners = cv_joiners[cv_joiners["pct_target"] >= 100]
+    elif cv_status == "Chua dat":
+        cv_joiners = cv_joiners[cv_joiners["pct_target"] < 100]
+
     if not cv_joiners.empty:
-        st.markdown("#### Tien do DT Chuyen Vien moi (target: 5 trieu)")
-        cv_joiners["pct_target"] = (cv_joiners["joiner_revenue_to_jul"] / CONDITION_CV_REVENUE * 100).clip(0, 150)
         cv_chart = cv_joiners[["Họ tên", "pct_target", "joiner_revenue_to_jul"]].sort_values(
             "pct_target", ascending=True
-        ).tail(20)
+        ).tail(cv_n_show)
 
         fig3 = go.Figure()
         fig3.add_trace(go.Bar(
@@ -558,11 +617,190 @@ if has_dsns:
             textposition="outside",
         ))
         fig3.add_vline(x=100, line_dash="dash", line_color="#B44BC8", annotation_text="Target 5tr")
-        fig3.update_layout(
-            xaxis_title="% Target", yaxis_title="",
-            height=max(300, 30 * len(cv_chart)),
-        )
+        fig3.update_layout(xaxis_title="% Target", yaxis_title="", height=max(300, 30 * len(cv_chart)))
         st.plotly_chart(apply_plotly_layout(fig3, title=""), use_container_width=True)
+
+        st.caption(f"Hien thi {len(cv_chart)}/{len(cv_joiners)} nguoi | Xanh = Dat, Vang = >=50%, Hong = <50%")
+    else:
+        empty_state("Khong co Chuyen Vien moi trong bo loc nay.")
+
+    st.divider()
+
+    # ── Chart 5: Phan bo DT nguoi moi (Histogram) ──
+    st.markdown("### Phan bo doanh thu nguoi moi")
+    hs_f1, hs_f2 = st.columns(2)
+    with hs_f1:
+        hs_level = st.selectbox("Cap bac (phan bo)", options=["Tat ca", "Chuyen Vien", "Truong Phong", "Giam Doc"], index=0, key="hs_lv_f")
+    with hs_f2:
+        hs_ch = st.selectbox("Kenh (phan bo)", options=ov_channel_opts, index=0, key="hs_ch_f")
+
+    hs_data = new_joiners[new_joiners["is_same_level"]].copy()
+    if hs_level != "Tat ca":
+        hs_data = hs_data[hs_data["level"] == hs_level]
+    if hs_ch != "Tat ca" and "Channal" in hs_data.columns:
+        hs_data = hs_data[hs_data["Channal"] == hs_ch]
+
+    if not hs_data.empty and hs_data["joiner_revenue_to_jul"].sum() > 0:
+        fig_hs = px.histogram(
+            hs_data, x="joiner_revenue_to_jul", nbins=20,
+            color_discrete_sequence=["#B44BC8"],
+            labels={"joiner_revenue_to_jul": "Doanh thu (VND)"},
+        )
+        fig_hs.add_vline(x=CONDITION_CV_REVENUE, line_dash="dash", line_color="#5FBFA0", annotation_text="5tr")
+        st.plotly_chart(apply_plotly_layout(fig_hs, title="", height=350), use_container_width=True)
+        st.caption(f"Trung binh: {fmt_vnd(hs_data['joiner_revenue_to_jul'].mean(), short=True)} | "
+                   f"Trung vi: {fmt_vnd(hs_data['joiner_revenue_to_jul'].median(), short=True)}")
+    else:
+        empty_state("Khong co du lieu DT.")
+
+    st.divider()
+
+    # ── Chart 6: Top Recruiters (horizontal bar) ──
+    st.markdown("### Top nguoi gioi thieu")
+    tr_f1, tr_f2 = st.columns(2)
+    with tr_f1:
+        tr_level = st.selectbox("Cap bac (recruiter)", options=["Tat ca", "Chuyen Vien", "Truong Phong", "Giam Doc"], index=0, key="tr_lv_f")
+    with tr_f2:
+        tr_n = st.slider("So nguoi hien thi", min_value=5, max_value=30, value=10, key="tr_n_show")
+
+    tr_data = valid_referrals.copy()
+    if tr_level != "Tat ca":
+        tr_data = tr_data[tr_data["recruiter_level"] == tr_level]
+
+    if not tr_data.empty:
+        tr_board = tr_data.groupby("recruiter_name").agg(
+            so_gt=("Họ tên", "count"),
+            so_dat=("trang_thai", lambda x: (x == "DAT").sum()),
+        ).reset_index().sort_values("so_gt", ascending=True).tail(tr_n)
+
+        fig_tr = go.Figure()
+        fig_tr.add_trace(go.Bar(
+            y=tr_board["recruiter_name"], x=tr_board["so_dat"],
+            name="Dat DK", orientation="h", marker_color="#5FBFA0",
+            text=tr_board["so_dat"], textposition="inside",
+        ))
+        fig_tr.add_trace(go.Bar(
+            y=tr_board["recruiter_name"], x=tr_board["so_gt"] - tr_board["so_dat"],
+            name="Chua dat", orientation="h", marker_color="#EDB16E",
+            text=(tr_board["so_gt"] - tr_board["so_dat"]), textposition="inside",
+        ))
+        fig_tr.update_layout(barmode="stack", height=max(300, 35 * len(tr_board)))
+        st.plotly_chart(apply_plotly_layout(fig_tr, title="", height=max(300, 35 * len(tr_board))), use_container_width=True)
+    else:
+        empty_state("Khong co du lieu recruiter.")
+
+    st.divider()
+
+    # ── Chart 7: Tien trinh tuyen dung theo tuan trong T06 ──
+    st.markdown("### Tien trinh tuyen dung theo tuan T06/2026")
+    wk_f1, wk_f2 = st.columns(2)
+    with wk_f1:
+        wk_level = st.selectbox("Cap bac (tuan)", options=["Tat ca", "Chuyen Vien", "Truong Phong", "Giam Doc"], index=0, key="wk_lv_f")
+    with wk_f2:
+        wk_ch = st.selectbox("Kenh (tuan)", options=ov_channel_opts, index=0, key="wk_ch_f")
+
+    wk_data = new_joiners.copy()
+    if wk_level != "Tat ca":
+        wk_data = wk_data[wk_data["level"] == wk_level]
+    if wk_ch != "Tat ca" and "Channal" in wk_data.columns:
+        wk_data = wk_data[wk_data["Channal"] == wk_ch]
+
+    if not wk_data.empty and wk_data["join_date"].notna().any():
+        wk_data["week"] = wk_data["join_date"].dt.isocalendar().week.astype(int)
+        wk_data["week_label"] = wk_data["join_date"].apply(
+            lambda d: f"Tuan {d.day // 7 + 1} ({d.strftime('%d/%m')})" if pd.notna(d) else ""
+        )
+        by_week = wk_data.groupby("week").agg(
+            count=("Họ tên", "count"),
+            week_start=("join_date", "min"),
+        ).reset_index().sort_values("week")
+        by_week["label"] = by_week["week_start"].dt.strftime("Tuan %d/%m")
+
+        fig_wk = px.bar(
+            by_week, x="label", y="count",
+            color_discrete_sequence=["#B44BC8"],
+            labels={"label": "Tuan", "count": "So nguoi gia nhap"},
+            text="count",
+        )
+        fig_wk.update_traces(textposition="outside")
+        st.plotly_chart(apply_plotly_layout(fig_wk, title="", height=350), use_container_width=True)
+    else:
+        empty_state("Khong co du lieu ngay gia nhap.")
+
+    st.divider()
+
+    # ── Chart 8: Ngan sach thuong theo kenh (stacked bar) ──
+    st.markdown("### Ngan sach thuong du kien theo kenh")
+    bg_filter = st.selectbox("Cap bac (ngan sach)", options=["Tat ca", "Chuyen Vien", "Truong Phong", "Giam Doc"], index=0, key="bg_lv_f")
+
+    bg_data = new_joiners[new_joiners["is_same_level"] & (new_joiners["trang_thai"] == "DAT")].copy()
+    if bg_filter != "Tat ca":
+        bg_data = bg_data[bg_data["level"] == bg_filter]
+
+    if not bg_data.empty and "Channal" in bg_data.columns:
+        def _reward_for_level(lv):
+            return {"Chuyen Vien": REWARD_CV, "Truong Phong": REWARD_TP, "Giam Doc": REWARD_GD}.get(lv, 0)
+
+        bg_data["reward"] = bg_data["level"].apply(_reward_for_level)
+        bg_agg = bg_data.groupby(["Channal", "level"]).agg(
+            count=("Họ tên", "count"),
+            total_reward=("reward", "sum"),
+        ).reset_index()
+        bg_agg["level_label"] = bg_agg["level"].map(LEVEL_LABELS)
+
+        fig_bg = px.bar(
+            bg_agg, x="Channal", y="total_reward", color="level_label",
+            barmode="stack", text="count",
+            color_discrete_map={
+                LEVEL_LABELS["Chuyen Vien"]: "#B44BC8",
+                LEVEL_LABELS["Truong Phong"]: "#F06EC2",
+                LEVEL_LABELS["Giam Doc"]: "#8B6FC9",
+            },
+            labels={"total_reward": "Thuong (VND)", "Channal": "Kenh", "level_label": "Cap bac"},
+        )
+        fig_bg.update_traces(textposition="inside")
+        st.plotly_chart(apply_plotly_layout(fig_bg, title="", height=380), use_container_width=True)
+    elif not bg_data.empty:
+        st.metric("Tong thuong (khong co Channel)", fmt_vnd(bg_data["level"].apply(_reward_for_level).sum()))
+    else:
+        empty_state("Chua co nguoi dat dieu kien.")
+
+    st.divider()
+
+    # ── Chart 9: Ty le Dat/Chua dat theo cap bac (stacked %) ──
+    st.markdown("### Ty le dat dieu kien theo cap bac")
+    el_ch = st.selectbox("Kenh (ty le)", options=ov_channel_opts, index=0, key="el_ch_f")
+
+    el_data = new_joiners[new_joiners["is_same_level"]].copy()
+    if el_ch != "Tat ca" and "Channal" in el_data.columns:
+        el_data = el_data[el_data["Channal"] == el_ch]
+
+    if not el_data.empty:
+        el_data["is_dat"] = el_data["trang_thai"] == "DAT"
+        el_agg = el_data.groupby("level").agg(
+            dat=("is_dat", "sum"),
+            total=("is_dat", "count"),
+        ).reset_index()
+        el_agg["chua_dat"] = el_agg["total"] - el_agg["dat"]
+        el_agg["level_label"] = el_agg["level"].map(LEVEL_LABELS)
+        el_agg["pct_dat"] = (el_agg["dat"] / el_agg["total"] * 100).round(1)
+
+        fig_el = go.Figure()
+        fig_el.add_trace(go.Bar(
+            x=el_agg["level_label"], y=el_agg["dat"],
+            name="Dat DK", marker_color="#5FBFA0",
+            text=el_agg.apply(lambda r: f"{int(r['dat'])} ({r['pct_dat']}%)", axis=1),
+            textposition="inside",
+        ))
+        fig_el.add_trace(go.Bar(
+            x=el_agg["level_label"], y=el_agg["chua_dat"],
+            name="Chua dat", marker_color="#E8738F",
+            text=el_agg["chua_dat"].astype(int), textposition="inside",
+        ))
+        fig_el.update_layout(barmode="stack")
+        st.plotly_chart(apply_plotly_layout(fig_el, title="", height=380), use_container_width=True)
+    else:
+        empty_state("Khong co du lieu ngang cap.")
 
     st.divider()
 
