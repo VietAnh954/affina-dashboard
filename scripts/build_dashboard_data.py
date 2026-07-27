@@ -309,6 +309,8 @@ def clean_data(sheet_io, dsns_io, qd_io):
         lambda x: str(x).lstrip("0") if pd.notna(x) and str(x) != "nan" else x)
     df_ns["Người giới thiệu"] = df_ns["Người giới thiệu"].apply(
         lambda x: str(x).lstrip("0") if pd.notna(x) and str(x) != "nan" else x)
+    df_ns["Code UM"] = df_ns["Code UM"].apply(
+        lambda x: str(x).lstrip("0") if pd.notna(x) and str(x) != "nan" else x)
 
     # 4.3 Cấp đơn — 7 sheet (giữ nguyên logic từ notebook)
     # BHSK
