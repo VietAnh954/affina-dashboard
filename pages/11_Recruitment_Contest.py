@@ -66,13 +66,25 @@ LEVEL_LABELS = {
     "Giam Doc": "Giám Đốc PTKD",
 }
 
-LEVEL_MAP_RECRUIT = {
+# "Cấp bậc" trong DSNS → cấp thi đua (dùng cho ngang cấp)
+CAP_BAC_MAP = {
+    "Nhân viên": "Chuyen Vien",
+    "Teamlead": "Truong Phong",
+    "Manager": "Giam Doc",
+    "Manager_Head": "Giam Doc",
+}
+
+# Fallback: "Chức danh" → cấp thi đua (nếu cấp bậc trống)
+CHUC_DANH_MAP = {
     "DSA": "Chuyen Vien", "AG": "Chuyen Vien", "TSA": "Chuyen Vien",
     "CTV": "Chuyen Vien", "CVKD": "Chuyen Vien", "RMC": "Chuyen Vien",
     "CTV TSA": "Chuyen Vien",
-    "BDM": "Truong Phong", "SM": "Truong Phong", "RMM": "Truong Phong",
+    "BDM": "Truong Phong", "BDM_DV": "Truong Phong",
+    "SM": "Truong Phong", "RMM": "Truong Phong", "UM": "Truong Phong",
     "TSA Team Leader": "Truong Phong", "TSA Leader": "Truong Phong",
-    "BDD": "Truong Phong", "SD": "Giam Doc", "RMD": "Giam Doc",
+    "Teamlead, Agency Managment": "Truong Phong",
+    "BDD": "Giam Doc", "BDD_DV": "Giam Doc",
+    "SD": "Giam Doc", "RMD": "Giam Doc", "AM": "Giam Doc",
     "TSA Manager": "Giam Doc",
 }
 
@@ -80,17 +92,24 @@ LEVEL_MAP_RECRUIT = {
 # ============================================================================
 # HELPERS
 # ============================================================================
-def _classify_recruit_level(chuc_danh: str) -> str:
-    if pd.isna(chuc_danh):
-        return "Chuyen Vien"
-    cd = str(chuc_danh).strip()
-    if cd in LEVEL_MAP_RECRUIT:
-        return LEVEL_MAP_RECRUIT[cd]
-    cd_upper = cd.upper()
-    if "BDD" in cd_upper or "GIAM DOC" in cd_upper or "SD" in cd_upper:
-        return "Giam Doc"
-    if "BDM" in cd_upper or "TRUONG" in cd_upper or "SM" in cd_upper:
-        return "Truong Phong"
+def _classify_recruit_level(row) -> str:
+    """Xác định cấp thi đua: ưu tiên 'Cấp bậc', fallback 'Chức danh'."""
+    cap_bac = row.get("Cấp bậc", None) if isinstance(row, dict) else (row["Cấp bậc"] if "Cấp bậc" in row.index else None)
+    if pd.notna(cap_bac):
+        cb = str(cap_bac).strip()
+        if cb in CAP_BAC_MAP:
+            return CAP_BAC_MAP[cb]
+
+    chuc_danh = row.get("Chức danh", None) if isinstance(row, dict) else (row["Chức danh"] if "Chức danh" in row.index else None)
+    if pd.notna(chuc_danh):
+        cd = str(chuc_danh).strip()
+        if cd in CHUC_DANH_MAP:
+            return CHUC_DANH_MAP[cd]
+        cd_upper = cd.upper()
+        if "BDD" in cd_upper or "GIAM DOC" in cd_upper:
+            return "Giam Doc"
+        if "BDM" in cd_upper or "TRUONG" in cd_upper:
+            return "Truong Phong"
     return "Chuyen Vien"
 
 
@@ -280,7 +299,7 @@ st.divider()
 # DATA PROCESSING
 # ============================================================================
 if has_dsns:
-    # ── Process DSNS: find new joiners in June 2026 ──
+    # ── Process DSNS: normalize phones + classify levels ──
     dsns["_phone"] = dsns["Điện thoại"].apply(_normalize_phone) if "Điện thoại" in dsns.columns else ""
     dsns["_recruiter_phone"] = dsns["Người giới thiệu"].apply(_normalize_phone) if "Người giới thiệu" in dsns.columns else ""
 
@@ -289,48 +308,58 @@ if has_dsns:
     else:
         dsns["join_date"] = pd.NaT
 
-    if "Chức danh" in dsns.columns:
-        dsns["level"] = dsns["Chức danh"].apply(_classify_recruit_level)
-    else:
-        dsns["level"] = "Chuyen Vien"
+    dsns["level"] = dsns.apply(_classify_recruit_level, axis=1)
 
-    # New joiners in June 2026
+    # Channel: prefer converted "Channel", fallback to "Channal"
+    if "Channel" not in dsns.columns and "Channal" in dsns.columns:
+        dsns["Channel"] = dsns["Channal"]
+
+    # ── New joiners in June 2026 ──
     new_joiners = dsns[
         (dsns["join_date"] >= RECRUIT_MONTH) &
         (dsns["join_date"] <= RECRUIT_MONTH_END)
     ].copy()
 
-    # Map recruiter phone → recruiter name
-    phone_to_name = dsns.drop_duplicates(subset=["_phone"]).set_index("_phone")["Họ tên"].to_dict()
-    phone_to_name.pop("", None)
-    phone_to_level = dsns.drop_duplicates(subset=["_phone"]).set_index("_phone")["level"].to_dict()
-    phone_to_level.pop("", None)
+    # ── Map recruiter: Code người giới thiệu → Code (primary), phone fallback ──
+    has_code_match = "Code người giới thiệu" in new_joiners.columns and "Code" in dsns.columns
+    if has_code_match:
+        code_to_name = dsns.drop_duplicates(subset=["Code"]).set_index("Code")["Họ tên"].to_dict()
+        code_to_level = dsns.drop_duplicates(subset=["Code"]).set_index("Code")["level"].to_dict()
+        code_to_phone = dsns.drop_duplicates(subset=["Code"]).set_index("Code")["_phone"].to_dict()
+        new_joiners["recruiter_name"] = new_joiners["Code người giới thiệu"].map(code_to_name)
+        new_joiners["recruiter_level"] = new_joiners["Code người giới thiệu"].map(code_to_level)
+        new_joiners["_recruiter_phone_resolved"] = new_joiners["Code người giới thiệu"].map(code_to_phone)
+    else:
+        phone_to_name = dsns.drop_duplicates(subset=["_phone"]).set_index("_phone")["Họ tên"].to_dict()
+        phone_to_name.pop("", None)
+        phone_to_level = dsns.drop_duplicates(subset=["_phone"]).set_index("_phone")["level"].to_dict()
+        phone_to_level.pop("", None)
+        new_joiners["recruiter_name"] = new_joiners["_recruiter_phone"].map(phone_to_name)
+        new_joiners["recruiter_level"] = new_joiners["_recruiter_phone"].map(phone_to_level)
+        new_joiners["_recruiter_phone_resolved"] = new_joiners["_recruiter_phone"]
 
-    new_joiners["recruiter_name"] = new_joiners["_recruiter_phone"].map(phone_to_name)
-    new_joiners["recruiter_level"] = new_joiners["_recruiter_phone"].map(phone_to_level)
-
-    # Filter: only same-level referrals (ngang cấp)
+    # Ngang cấp check
     new_joiners["is_same_level"] = new_joiners["level"] == new_joiners["recruiter_level"]
 
-    # ── Revenue data ──
-    # Revenue of new joiners (from join date to deadline)
+    # ── Revenue data (from master_data, match by phone) ──
     df_revenue = df_all[df_all[DATE_COL].notna()].copy()
     df_revenue["_sale_phone"] = df_revenue[phone_col].apply(_normalize_phone) if phone_col in df_revenue.columns else ""
 
-    # Recruiter revenue in June 2026 (condition for CV level)
+    # Recruiter revenue in June 2026 (condition for CV level referrers)
     june_revenue = df_revenue[
         (df_revenue[DATE_COL] >= RECRUIT_MONTH) &
         (df_revenue[DATE_COL] <= RECRUIT_MONTH_END)
     ].groupby("_sale_phone")["Doanh thu trước thuế"].sum().reset_index()
     june_revenue.columns = ["_phone", "recruiter_june_revenue"]
 
-    # New joiner revenue (from join to deadline)
+    # New joiner revenue (from join to CV deadline 31/07)
     joiner_cv_revenue = df_revenue[
         (df_revenue[DATE_COL] >= RECRUIT_MONTH) &
         (df_revenue[DATE_COL] <= DEADLINE_CV)
     ].groupby("_sale_phone")["Doanh thu trước thuế"].sum().reset_index()
     joiner_cv_revenue.columns = ["_phone", "joiner_revenue_to_jul"]
 
+    # New joiner revenue (from join to TP/GD deadline 31/08)
     joiner_tp_gd_revenue = df_revenue[
         (df_revenue[DATE_COL] >= RECRUIT_MONTH) &
         (df_revenue[DATE_COL] <= DEADLINE_TP_GD)
@@ -343,9 +372,10 @@ if has_dsns:
     new_joiners["joiner_revenue_to_jul"] = new_joiners["joiner_revenue_to_jul"].fillna(0)
     new_joiners["joiner_revenue_to_aug"] = new_joiners["joiner_revenue_to_aug"].fillna(0)
 
-    # Recruiter june revenue
+    # Recruiter june revenue (match by resolved phone)
+    rec_phone_col = "_recruiter_phone_resolved" if "_recruiter_phone_resolved" in new_joiners.columns else "_recruiter_phone"
     new_joiners = new_joiners.merge(
-        june_revenue, left_on="_recruiter_phone", right_on="_phone",
+        june_revenue, left_on=rec_phone_col, right_on="_phone",
         how="left", suffixes=("", "_rec")
     )
     new_joiners["recruiter_june_revenue"] = new_joiners["recruiter_june_revenue"].fillna(0)
@@ -407,7 +437,11 @@ if has_dsns:
     if not display_joiners.empty:
         disp_cols = {
             "Họ tên": "Nguoi duoc GT",
-            "level": "Cap bac",
+            "Cấp bậc": "Cap bac (DSNS)",
+            "Chức danh": "Chuc danh",
+            "level": "Cap thi dua",
+            "Channel": "Kenh",
+            "Phòng ban": "Phong ban",
             "join_date": "Ngay gia nhap",
             "recruiter_name": "Nguoi gioi thieu",
             "recruiter_level": "Cap nguoi GT",
@@ -508,14 +542,14 @@ if has_dsns:
     # ── Chart 1 & 2: Pie + Bar overview (with shared filter) ──
     ch_ov_f1, ch_ov_f2 = st.columns(2)
     with ch_ov_f1:
-        ov_channel_opts = ["Tat ca"] + sorted(new_joiners["Channal"].dropna().unique().tolist()) if "Channal" in new_joiners.columns else ["Tat ca"]
+        ov_channel_opts = ["Tat ca"] + sorted(new_joiners["Channel"].dropna().unique().tolist()) if "Channel" in new_joiners.columns else ["Tat ca"]
         ov_ch_filter = st.selectbox("Kenh (tong quan)", options=ov_channel_opts, index=0, key="ov_ch_f")
     with ch_ov_f2:
         ov_same_filter = st.selectbox("Chi ngang cap?", options=["Tat ca", "Chi ngang cap", "Chi khac cap"], index=0, key="ov_same_f")
 
     ov_data = new_joiners.copy()
-    if ov_ch_filter != "Tat ca" and "Channal" in ov_data.columns:
-        ov_data = ov_data[ov_data["Channal"] == ov_ch_filter]
+    if ov_ch_filter != "Tat ca" and "Channel" in ov_data.columns:
+        ov_data = ov_data[ov_data["Channel"] == ov_ch_filter]
     if ov_same_filter == "Chi ngang cap":
         ov_data = ov_data[ov_data["is_same_level"]]
     elif ov_same_filter == "Chi khac cap":
@@ -536,10 +570,10 @@ if has_dsns:
             empty_state("Khong co du lieu.")
 
     with col_chart2:
-        if not ov_data.empty and "Channal" in ov_data.columns:
-            by_channel = ov_data.groupby("Channal").size().reset_index(name="count")
+        if not ov_data.empty and "Channel" in ov_data.columns:
+            by_channel = ov_data.groupby("Channel").size().reset_index(name="count")
             fig2 = px.bar(
-                by_channel, x="Channal", y="count", color="Channal",
+                by_channel, x="Channel", y="count", color="Channel",
                 color_discrete_map={"Core": COLORS["Core"], "Neo": COLORS["Neo"], "TSA": COLORS["TSA"]},
             )
             fig2.update_layout(showlegend=False)
@@ -560,8 +594,8 @@ if has_dsns:
     fn_data = new_joiners.copy()
     if fn_level != "Tat ca":
         fn_data = fn_data[fn_data["level"] == fn_level]
-    if fn_ch != "Tat ca" and "Channal" in fn_data.columns:
-        fn_data = fn_data[fn_data["Channal"] == fn_ch]
+    if fn_ch != "Tat ca" and "Channel" in fn_data.columns:
+        fn_data = fn_data[fn_data["Channel"] == fn_ch]
 
     if not fn_data.empty:
         funnel_stages = [
@@ -593,8 +627,8 @@ if has_dsns:
         cv_n_show = st.slider("So nguoi hien thi", min_value=5, max_value=50, value=20, key="cv_n_show")
 
     cv_joiners = new_joiners[(new_joiners["level"] == "Chuyen Vien") & (new_joiners["is_same_level"])].copy()
-    if cv_ch != "Tat ca" and "Channal" in cv_joiners.columns:
-        cv_joiners = cv_joiners[cv_joiners["Channal"] == cv_ch]
+    if cv_ch != "Tat ca" and "Channel" in cv_joiners.columns:
+        cv_joiners = cv_joiners[cv_joiners["Channel"] == cv_ch]
     cv_joiners["pct_target"] = (cv_joiners["joiner_revenue_to_jul"] / CONDITION_CV_REVENUE * 100).clip(0, 200)
     if cv_status == "Dat":
         cv_joiners = cv_joiners[cv_joiners["pct_target"] >= 100]
@@ -637,8 +671,8 @@ if has_dsns:
     hs_data = new_joiners[new_joiners["is_same_level"]].copy()
     if hs_level != "Tat ca":
         hs_data = hs_data[hs_data["level"] == hs_level]
-    if hs_ch != "Tat ca" and "Channal" in hs_data.columns:
-        hs_data = hs_data[hs_data["Channal"] == hs_ch]
+    if hs_ch != "Tat ca" and "Channel" in hs_data.columns:
+        hs_data = hs_data[hs_data["Channel"] == hs_ch]
 
     if not hs_data.empty and hs_data["joiner_revenue_to_jul"].sum() > 0:
         fig_hs = px.histogram(
@@ -702,8 +736,8 @@ if has_dsns:
     wk_data = new_joiners.copy()
     if wk_level != "Tat ca":
         wk_data = wk_data[wk_data["level"] == wk_level]
-    if wk_ch != "Tat ca" and "Channal" in wk_data.columns:
-        wk_data = wk_data[wk_data["Channal"] == wk_ch]
+    if wk_ch != "Tat ca" and "Channel" in wk_data.columns:
+        wk_data = wk_data[wk_data["Channel"] == wk_ch]
 
     if not wk_data.empty and wk_data["join_date"].notna().any():
         wk_data["week"] = wk_data["join_date"].dt.isocalendar().week.astype(int)
@@ -737,26 +771,26 @@ if has_dsns:
     if bg_filter != "Tat ca":
         bg_data = bg_data[bg_data["level"] == bg_filter]
 
-    if not bg_data.empty and "Channal" in bg_data.columns:
+    if not bg_data.empty and "Channel" in bg_data.columns:
         def _reward_for_level(lv):
             return {"Chuyen Vien": REWARD_CV, "Truong Phong": REWARD_TP, "Giam Doc": REWARD_GD}.get(lv, 0)
 
         bg_data["reward"] = bg_data["level"].apply(_reward_for_level)
-        bg_agg = bg_data.groupby(["Channal", "level"]).agg(
+        bg_agg = bg_data.groupby(["Channel", "level"]).agg(
             count=("Họ tên", "count"),
             total_reward=("reward", "sum"),
         ).reset_index()
         bg_agg["level_label"] = bg_agg["level"].map(LEVEL_LABELS)
 
         fig_bg = px.bar(
-            bg_agg, x="Channal", y="total_reward", color="level_label",
+            bg_agg, x="Channel", y="total_reward", color="level_label",
             barmode="stack", text="count",
             color_discrete_map={
                 LEVEL_LABELS["Chuyen Vien"]: "#B44BC8",
                 LEVEL_LABELS["Truong Phong"]: "#F06EC2",
                 LEVEL_LABELS["Giam Doc"]: "#8B6FC9",
             },
-            labels={"total_reward": "Thuong (VND)", "Channal": "Kenh", "level_label": "Cap bac"},
+            labels={"total_reward": "Thuong (VND)", "Channel": "Kenh", "level_label": "Cap bac"},
         )
         fig_bg.update_traces(textposition="inside")
         st.plotly_chart(apply_plotly_layout(fig_bg, title="", height=380), use_container_width=True)
@@ -772,8 +806,8 @@ if has_dsns:
     el_ch = st.selectbox("Kenh (ty le)", options=ov_channel_opts, index=0, key="el_ch_f")
 
     el_data = new_joiners[new_joiners["is_same_level"]].copy()
-    if el_ch != "Tat ca" and "Channal" in el_data.columns:
-        el_data = el_data[el_data["Channal"] == el_ch]
+    if el_ch != "Tat ca" and "Channel" in el_data.columns:
+        el_data = el_data[el_data["Channel"] == el_ch]
 
     if not el_data.empty:
         el_data["is_dat"] = el_data["trang_thai"] == "DAT"
@@ -851,14 +885,19 @@ if has_dsns:
     )
 
     if export_choice == "Danh sach nguoi duoc GT":
-        exp_df = new_joiners[[
-            "Họ tên", "level", "join_date", "recruiter_name", "recruiter_level",
-            "is_same_level", "joiner_revenue_to_jul", "joiner_revenue_to_aug", "trang_thai"
-        ]].copy()
-        exp_df.columns = [
-            "Nguoi duoc GT", "Cap bac", "Ngay gia nhap", "Nguoi GT", "Cap nguoi GT",
-            "Ngang cap", "DT den 31/07", "DT den 31/08", "Trang thai"
-        ]
+        exp_base_cols = ["Họ tên", "Cấp bậc", "Chức danh", "level", "Channel", "Phòng ban",
+                         "join_date", "recruiter_name", "recruiter_level",
+                         "is_same_level", "joiner_revenue_to_jul", "joiner_revenue_to_aug", "trang_thai"]
+        exp_cols = [c for c in exp_base_cols if c in new_joiners.columns]
+        exp_df = new_joiners[exp_cols].copy()
+        exp_rename = {
+            "Họ tên": "Nguoi duoc GT", "Cấp bậc": "Cap bac (DSNS)", "Chức danh": "Chuc danh",
+            "level": "Cap thi dua", "Channel": "Kenh", "Phòng ban": "Phong ban",
+            "join_date": "Ngay gia nhap", "recruiter_name": "Nguoi GT", "recruiter_level": "Cap nguoi GT",
+            "is_same_level": "Ngang cap", "joiner_revenue_to_jul": "DT den 31/07",
+            "joiner_revenue_to_aug": "DT den 31/08", "trang_thai": "Trang thai",
+        }
+        exp_df = exp_df.rename(columns=exp_rename)
         exp_df["Ngang cap"] = exp_df["Ngang cap"].map({True: "Co", False: "Khong"})
         sheet = "DS Nguoi duoc GT"
     elif export_choice == "Bang xep hang nguoi GT" and not valid_referrals.empty:

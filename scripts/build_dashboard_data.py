@@ -1065,7 +1065,8 @@ def main():
 
     # Push DSNS trimmed (chỉ cột cần cho recruitment contest + mapping)
     dsns_cols_keep = [
-        "Họ tên", "Điện thoại", "Chức danh", "Channal", "Status",
+        "Code", "Họ tên", "Điện thoại", "Cấp bậc", "Loại hợp đồng",
+        "Phòng ban", "Chức danh", "Channal", "Channel", "Status",
         "Thời gian bắt đầu", "Code người giới thiệu", "Người giới thiệu",
         "QUẢN LÝ CẤP 1 (BDM)", "QUẢN LÝ CẤP 2 (BDD)", "Quản lý Cấp 3 (BDH)",
     ]
