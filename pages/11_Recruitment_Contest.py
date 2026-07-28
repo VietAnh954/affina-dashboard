@@ -304,7 +304,21 @@ if has_dsns:
     dsns["_recruiter_phone"] = dsns["Người giới thiệu"].apply(_normalize_phone) if "Người giới thiệu" in dsns.columns else ""
 
     if "Thời gian bắt đầu" in dsns.columns:
-        dsns["join_date"] = pd.to_datetime(dsns["Thời gian bắt đầu"], errors="coerce", dayfirst=True)
+        import re as _re
+
+        def _parse_date_robust(val):
+            if pd.isna(val) or str(val).strip() in ("", "nan", "None", "NaT"):
+                return pd.NaT
+            s = str(val).strip()
+            s = _re.sub(r"\s+\d{1,2}:\d{2}(:\d{2})?$", "", s)
+            for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y"):
+                try:
+                    return pd.to_datetime(s, format=fmt)
+                except (ValueError, TypeError):
+                    continue
+            return pd.to_datetime(s, errors="coerce", dayfirst=True)
+
+        dsns["join_date"] = dsns["Thời gian bắt đầu"].apply(_parse_date_robust)
     else:
         dsns["join_date"] = pd.NaT
 

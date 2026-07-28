@@ -163,7 +163,7 @@ def standardize_date_format(date_value):
     if date_str in ["None", "nan", "", "NaT"]:
         return None
     try:
-        match = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", date_str)
+        match = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$", date_str)
         if match:
             year, p1, p2 = match.groups()
             if int(p1) > 12 and int(p2) <= 12:
